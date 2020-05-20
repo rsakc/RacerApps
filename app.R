@@ -18,7 +18,7 @@ data.all <- filter(data.all, FinishTime < 100)
 data.all <- filter(data.all, Body == "Bayes" | Body == "Nightingale" | Body == "Gauss")
 data.all <- filter(data.all, Level == "Tutorial" | Level == "CreateCar" | Level == "ChooseCar")
 data.all <- filter(data.all, Track == "Tutorial" | Track == "StraightTrack" | Track == "OvalTrack" | Track == "8Track" | Track == "ComplexTrack" | Track == "VeryComplexTrack")
-
+#adasdadasd
 all_groups <- sort(unique(data.all$GroupID))
 all_players <- sort(unique(data.all$PlayerID))
 all_tracks <- sort(unique(data.all$Track))
