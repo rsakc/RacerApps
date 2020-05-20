@@ -142,26 +142,25 @@ server <- function(input, output,session) {
   })
   
 #Fix this later  
-#pairedData <- plotData
     
-for(i in 1:(nrow(pairedData))){
-  
-  if(i == nrow(pairedData)){
-    
-    break
-  }
-  
-  if(IsOdd(pairedData$Order[i]) == TRUE & (pairedData$Level[i] %in% c("Tutorial", "Paired")) == TRUE){
-    
-    if(pairedData$PlayerID[i] != pairedData$PlayerID[i + 1])
-      #pairedData$Level[i] != pairedData$Level[i + 1]){
-    {
-      pairedData <- pairedData[-i,]
-      
-    }
-  }
-  
-}
+# for(i in 1:(nrow(pairedData))){
+#   
+#   if(i == nrow(pairedData)){
+#     
+#     break
+#   }
+#   
+#   if(IsOdd(pairedData$Order[i]) == TRUE & (pairedData$Level[i] %in% c("Tutorial", "Paired")) == TRUE){
+#     
+#     if(pairedData$PlayerID[i] != pairedData$PlayerID[i + 1])
+#       #pairedData$Level[i] != pairedData$Level[i + 1]){
+#     {
+#       pairedData <- pairedData[-i,]
+#       
+#     }
+#   }
+#   
+# }
         
   
   
