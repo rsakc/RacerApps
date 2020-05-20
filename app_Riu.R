@@ -9,7 +9,7 @@ library(gdata)
 
 ##RACER1 DATA
 #data.all <-read.csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdata.php") 
-data.all <-read.csv("/cloud/project/RacerClean.csv") 
+data.all <-read.csv("data/RacerClean.csv") 
 #data.all$Level <- as.factor(data.all$Level)
 data.all$GroupID <- as.character(data.all$GroupID)
 data.all$PlayerID <- as.character(data.all$PlayerID)
@@ -149,6 +149,8 @@ server <- function(input, output,session) {
     
     
     if (input$bplot == "TRUE"){
+      
+      cols <- c("Bayes" = "blue", "Gauss" = "red", "Nightingale" = "orange")
       myplot <- ggplot(data = plotData, aes_string(x = input$xvar, y = input$yvar, color=input$color)) +
         geom_boxplot() +
         geom_point(position=position_dodge(0.8)) +
@@ -160,8 +162,13 @@ server <- function(input, output,session) {
               axis.title = element_text(size = 16), 
               legend.title = element_text(size = 14), 
               legend.text = element_text(size = 12), 
-              axis.text.y = element_text(size = 11))
-    } else {
+              axis.text.y = element_text(size = 11)) +
+        scale_color_manual(values = cols)
+      
+   
+       } else {
+      
+      cols <- c("Bayes" = "blue", "Gauss" = "red", "Nightingale" = "orange")   
       myplot <- ggplot(data = plotData, aes_string(x = input$xvar, y = input$yvar, color=input$color), plot.title = element_text(size = 18)) +
         #geom_boxplot()+
         geom_point(position=position_dodge(0.8)) +
@@ -174,7 +181,8 @@ server <- function(input, output,session) {
               plot.title = element_text(size = 18),
               legend.title = element_text(size = 14), 
               legend.text = element_text(size = 12), 
-              axis.text.y = element_text(size = 11))
+              axis.text.y = element_text(size = 11)) +
+        scale_color_manual(values = cols)
       
       ### change plot colors by the color of the car
       
