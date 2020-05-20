@@ -6,6 +6,8 @@ library(broom)
 library(tidyr)
 library(purrr)
 library(gdata)
+library(DescTools)
+library(schoolmath)
 
 ##RACER1 DATA
 
@@ -16,14 +18,119 @@ library(gdata)
 data.all <-read.csv("data/RacerClean.csv") 
 
 
+#Reordering 
+for(i in 1:nrow(data.all)){
+  
+  if(i == nrow(data.all)){
+    break
+  }
+  if(data.all$PlayerID[i] == data.all$PlayerID[i + 1] &
+     data.all$Level[i] == data.all$Level[i + 1] &
+     data.all$Track[i] == data.all$Track[i + 1]){
+    
+    if(data.all$Order[i] > data.all$Order[i + 1]){
+      
+      temp <- data.all$Order[i + 1]
+      data.all$Order[i + 1] <- data.all$Order[i]
+      data.all$Order[i] <- temp
+      
+      
+    }
+  }
+}
+
+#Remove Non Pairs
+for(i in 1:(nrow(data.all))){
+  
+  if(i == nrow(data.all)){
+    
+    break
+  }
+  
+  if(IsOdd(data.all$Order[i]) == TRUE){
+    
+    if(data.all$PlayerID[i] != data.all$PlayerID[i + 1]){
+      data.all <- data.all[-i,]
+      
+    }
+  }
+  
+  if(i != 1){
+    
+    if(is.even(data.all$Order[i]) == TRUE &
+       data.all$PlayerID[i] != data.all$PlayerID[i + 1] &
+       data.all$PlayerID[i] != data.all$PlayerID[i - 1]){
+      
+      data.all <- data.all[-i,]
+    }
+  }
+}
+
 #data.all$Level <- as.factor(data.all$Level)
 data.all$GroupID <- as.character(data.all$GroupID)
 data.all$PlayerID <- as.character(data.all$PlayerID)
 data.all$Track<- as.factor(data.all$Track)
 data.all <- filter(data.all, FinishTime < 100)
+
+
+#Filter date
+#data.all <- filter(data.all GameDate)
 data.all <- filter(data.all, Body == "Bayes" | Body == "Nightingale" | Body == "Gauss")
-data.all <- filter(data.all, Level == "Tutorial" | Level == "CreateCar" | Level == "ChooseCar")
+data.all <- filter(data.all, Level == "Tutorial" | Level == "Paired")
 data.all <- filter(data.all, Track == "Tutorial" | Track == "StraightTrack" | Track == "OvalTrack" | Track == "8Track" | Track == "ComplexTrack" | Track == "VeryComplexTrack")
+
+
+#Adding Order2
+data.all$Order2 <- NA
+
+for(i in 1:nrow(data.all)){
+  
+  if(IsOdd(data.all$Order[i]) == TRUE){
+    data.all$Order2[i] <- 1
+ 
+  } else{
+       
+    data.all$Order2[i] <- 2
+    }
+}
+
+#Adding Player2
+data.all$PlayerID2 <- NA
+
+counter <- 1
+for(i in 1:nrow(data.all)){
+
+  if(i == nrow(data.all)){
+    
+    break
+  }
+  
+
+  if(data.all$PlayerID[i] == data.all$PlayerID[i+1] &
+     data.all$Track[i] == data.all$Track[i + 1] &
+     data.all$Level[i] == data.all$Level[i + 1]){
+  
+  if(IsOdd(data.all$Order2[i]) == TRUE &
+    is.even(data.all$Order2[i + 1]) == TRUE &
+    data.all$Order2[i+1] == data.all$Order2[i] + 1){
+      
+      data.all$PlayerID2[i] <- paste(data.all$PlayerID[i], counter, sep = "")
+      data.all$PlayerID2[i + 1] <- paste(data.all$PlayerID[i], counter, sep = "")
+  }
+    
+   if(is.even(data.all$Order2[i]) == TRUE &
+      IsOdd(data.all$Order2[i + 1] == TRUE)){
+     
+     counter <- counter + 1
+  
+      } 
+  
+  } else {
+   counter <- 1
+  }
+   
+   
+}
 
 
 all_groups <- sort(unique(data.all$GroupID))
@@ -141,26 +248,42 @@ server <- function(input, output,session) {
                       selected = "all")
   })
   
-#Fix this later  
+  
+  observeEvent(input$filterPData, {
     
-# for(i in 1:(nrow(pairedData))){
-#   
-#   if(i == nrow(pairedData)){
-#     
-#     break
-#   }
-#   
-#   if(IsOdd(pairedData$Order[i]) == TRUE & (pairedData$Level[i] %in% c("Tutorial", "Paired")) == TRUE){
-#     
-#     if(pairedData$PlayerID[i] != pairedData$PlayerID[i + 1])
-#       #pairedData$Level[i] != pairedData$Level[i + 1]){
-#     {
-#       pairedData <- pairedData[-i,]
-#       
-#     }
-#   }
-#   
-# }
+    if(input$filterPData == TRUE){
+      
+      plotData <- reactive({
+        
+        tempData <- plotData()
+        
+        #Filter here
+        
+      })
+      
+      
+      
+      
+      
+    } else{}
+    
+    plotData <- reactive({
+      
+     
+      
+      
+      
+    })
+    
+    
+  })  
+  
+  
+  
+  
+
+    
+
         
   
   
