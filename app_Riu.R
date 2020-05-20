@@ -8,8 +8,14 @@ library(purrr)
 library(gdata)
 
 ##RACER1 DATA
-#data.all <-read.csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdata.php") 
-data.all <-read.csv("data/RacerClean.csv") 
+
+#Raw Data
+data.all <-read.csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdata.php") 
+
+#Filtered Data
+#data.all <-read.csv("data/RacerClean.csv") 
+
+
 #data.all$Level <- as.factor(data.all$Level)
 data.all$GroupID <- as.character(data.all$GroupID)
 data.all$PlayerID <- as.character(data.all$PlayerID)
@@ -18,6 +24,7 @@ data.all <- filter(data.all, FinishTime < 100)
 data.all <- filter(data.all, Body == "Bayes" | Body == "Nightingale" | Body == "Gauss")
 data.all <- filter(data.all, Level == "Tutorial" | Level == "CreateCar" | Level == "ChooseCar")
 data.all <- filter(data.all, Track == "Tutorial" | Track == "StraightTrack" | Track == "OvalTrack" | Track == "8Track" | Track == "ComplexTrack" | Track == "VeryComplexTrack")
+
 
 all_groups <- sort(unique(data.all$GroupID))
 all_players <- sort(unique(data.all$PlayerID))
@@ -88,6 +95,8 @@ ui <- fluidPage(
       
       checkboxInput('filterPData',"Filter Paired Data",FALSE),
       
+      checkboxInput('keeppairs',"Keep Only Pairs", FALSE),
+      
       downloadButton('downloadData', label = "Racer Data")
       
     ),
@@ -131,6 +140,29 @@ server <- function(input, output,session) {
                       choices = c("all", sort(unique(gamedata$PlayerID))),
                       selected = "all")
   })
+  
+#Fix this later  
+#pairedData <- plotData
+    
+for(i in 1:(nrow(pairedData))){
+  
+  if(i == nrow(pairedData)){
+    
+    break
+  }
+  
+  if(IsOdd(pairedData$Order[i]) == TRUE & (pairedData$Level[i] %in% c("Tutorial", "Paired")) == TRUE){
+    
+    if(pairedData$PlayerID[i] != pairedData$PlayerID[i + 1])
+      #pairedData$Level[i] != pairedData$Level[i + 1]){
+    {
+      pairedData <- pairedData[-i,]
+      
+    }
+  }
+  
+}
+        
   
   
   # Creates Plot 
