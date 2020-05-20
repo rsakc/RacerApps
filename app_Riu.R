@@ -332,7 +332,7 @@ server <- function(input, output,session) {
     
     
     myplot
-    
+     
   })
   
   output$downloadData <- downloadHandler(
