@@ -10,10 +10,10 @@ library(gdata)
 ##RACER1 DATA
 
 #Raw Data
-data.all <-read.csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdata.php") 
+#data.all <-read.csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdata.php") 
 
 #Filtered Data
-#data.all <-read.csv("data/RacerClean.csv") 
+data.all <-read.csv("data/RacerClean.csv") 
 
 
 #data.all$Level <- as.factor(data.all$Level)
