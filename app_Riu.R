@@ -307,7 +307,9 @@ server <- function(input, output,session) {
       
       
       
-    } else{
+    } 
+    
+    if(input$filterPData == "FALSE"){
       
     plotData <- reactive({
       if("all" %in% input$playerID)
@@ -318,17 +320,9 @@ server <- function(input, output,session) {
       
     }
     
-
-    
   })  
   
   
-  
-  
-
-    
-
-        
   
   
   # Creates Plot 
