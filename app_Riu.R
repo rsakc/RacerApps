@@ -18,7 +18,7 @@ library(schoolmath)
 data.all <-read.csv("data/RacerClean.csv") 
 
 
-#Reordering 
+#Reordering Rows if Needed
 for(i in 1:nrow(data.all)){
   
   if(i == nrow(data.all)){
@@ -39,7 +39,7 @@ for(i in 1:nrow(data.all)){
   }
 }
 
-#Remove Non Pairs
+#Only Keeping Paired Data
 for(i in 1:(nrow(data.all))){
   
   if(i == nrow(data.all)){
@@ -73,11 +73,15 @@ data.all$Track<- as.factor(data.all$Track)
 data.all <- filter(data.all, FinishTime < 100)
 
 
-#Filter date
-#data.all <- filter(data.all GameDate)
 data.all <- filter(data.all, Body == "Bayes" | Body == "Nightingale" | Body == "Gauss")
 data.all <- filter(data.all, Level == "Tutorial" | Level == "Paired")
 data.all <- filter(data.all, Track == "Tutorial" | Track == "StraightTrack" | Track == "OvalTrack" | Track == "8Track" | Track == "ComplexTrack" | Track == "VeryComplexTrack")
+
+#Filtering Date
+#data.all <- data.all %>% separate(GameDate, c("Date", "Time"), " ")
+#data.all$Date <- as.Date(data.all$Date, format = "%m/%d/%Y")
+#data.all <- data.all %>% filter(Date >= as.Date("01/01/2020", format = "%m/%d/%Y"))
+
 
 
 #Adding Order2
@@ -132,6 +136,8 @@ for(i in 1:nrow(data.all)){
    
 }
 
+data.all <- data.all %>% filter(!(is.na(data.all$PlayerID2)))
+
 
 all_groups <- sort(unique(data.all$GroupID))
 all_players <- sort(unique(data.all$PlayerID))
@@ -153,7 +159,7 @@ ui <- fluidPage(
                   selected = "stest"),
       
       selectInput("levels", "Level",
-                  choices = c("Tutorial", "ChooseCar", "CreateCar"),
+                  choices = c("Tutorial", "Paired"),
                   multiple = TRUE,
                   selectize = TRUE,
                   selected = "Tutorial"),
@@ -202,7 +208,7 @@ ui <- fluidPage(
       
       checkboxInput('filterPData',"Filter Paired Data",FALSE),
       
-      checkboxInput('keeppairs',"Keep Only Pairs", FALSE),
+      
       
       downloadButton('downloadData', label = "Racer Data")
       
@@ -249,32 +255,70 @@ server <- function(input, output,session) {
   })
   
   
+  returnData <- data.all
+  
+  
   observeEvent(input$filterPData, {
     
-    if(input$filterPData == TRUE){
+    
+    
+    if(input$filterPData == "TRUE"){
       
       plotData <- reactive({
         
         tempData <- plotData()
         
-        #Filter here
+        tempData$TempColumn <- 0
+        
+        
+        for(i in 1:nrow(tempData)){
+          
+          if(tempData$TimeOffTrack[i] > 0.3){
+            
+            tempData$TempColumn[i] <- 1
+          }
+        }
+        
+        for(i in 1:nrow(tempData)){
+          
+          if(i == nrow(tempData)){
+            
+            break
+          }
+          
+          if(tempData$PlayerID2[i] != tempData$PlayerID2[i + 1]){}
+          
+          
+          
+          if(tempData$PlayerID2[i] == tempData$PlayerID2[i + 1] &
+             (tempData$TempColumn[i] == 1 |
+              tempData$TempColumn[i + 1] == 1)){
+            
+            tempData$TempColumn[i] <-  1
+            tempData$TempColumn[i + 1] <-  1
+            
+          }
+          
+        }
+        
+        tempData <- tempData %>% filter(TempColumn == 0)
         
       })
       
       
       
+    } else{
       
-      
-    } else{}
-    
     plotData <- reactive({
+      if("all" %in% input$playerID)
+        {filter(data.all, GroupID %in% input$groupID, Level %in% input$levels)}
+        else{filter(data.all, GroupID %in% input$groupID, Level %in% input$levels, PlayerID %in% input$playerID)}
       
-     
+      })  
       
-      
-      
-    })
+    }
     
+
     
   })  
   
