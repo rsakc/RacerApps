@@ -295,7 +295,7 @@ server <- function(input, output,session) {
     
     
     if ("all" %in% input$groupID) {gamedata <- data.all}
-    else{gamedata <- filter(data.all, GroupID == input$groupID)}
+    else{gamedata <- filter(data.all, GroupID %in% input$groupID)}
     
     updateSelectInput(session, 
                       "playerID",
@@ -305,7 +305,7 @@ server <- function(input, output,session) {
     } else {
       
       if ("all" %in% input$groupID) {gamedata <- removed.data}
-      else{gamedata <- filter(removed.data, GroupID == input$groupID)}
+      else{gamedata <- filter(removed.data, GroupID %in% input$groupID)}
       
       updateSelectInput(session, 
                         "playerID",
@@ -357,6 +357,7 @@ server <- function(input, output,session) {
         labs(x = input$xvar, y = input$yvar, title = paste("Plot of",input$yvar, "by",input$xvar, "and colored by", input$color)) +
         theme(axis.text.x = element_text(size = 14), 
               axis.title = element_text(size = 16), 
+              plot.title = element_text(size = 18, face = "bold"),
               legend.title = element_text(size = 14), 
               legend.text = element_text(size = 12), 
               axis.text.y = element_text(size = 11)) +
@@ -375,7 +376,7 @@ server <- function(input, output,session) {
         labs(x = input$xvar, y = input$yvar, title = paste("Plot of",input$yvar, "by",input$xvar, "and colored by", input$color)) +
         theme(axis.text.x = element_text(size = 14), 
               axis.title = element_text(size = 16), 
-              plot.title = element_text(size = 18),
+              plot.title = element_text(size = 18, face = "bold"),
               legend.title = element_text(size = 14), 
               legend.text = element_text(size = 12), 
               axis.text.y = element_text(size = 11)) +
