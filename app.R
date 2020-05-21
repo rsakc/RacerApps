@@ -6,19 +6,175 @@ library(broom)
 library(tidyr)
 library(purrr)
 library(gdata)
+library(DescTools)
+library(schoolmath)
 
 ##RACER1 DATA
+
+#Raw Data
 #data.all <-read.csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdata.php") 
+
+#Cleaner Data
 data.all <-read.csv("data/RacerClean.csv") 
+
+
+#Reordering Rows if Needed
+for(i in 1:nrow(data.all)){
+  
+  if(i == nrow(data.all)){
+    break
+  }
+  if(data.all$PlayerID[i] == data.all$PlayerID[i + 1] &
+     data.all$Level[i] == data.all$Level[i + 1] &
+     data.all$Track[i] == data.all$Track[i + 1]){
+    
+    if(data.all$Order[i] > data.all$Order[i + 1]){
+      
+      temp <- data.all$Order[i + 1]
+      data.all$Order[i + 1] <- data.all$Order[i]
+      data.all$Order[i] <- temp
+      
+      
+    }
+  }
+}
+
+#Only Keeping Paired Data
+for(i in 1:(nrow(data.all))){
+  
+  if(i == nrow(data.all)){
+    
+    break
+  }
+  
+  if(IsOdd(data.all$Order[i]) == TRUE){
+    
+    if(data.all$PlayerID[i] != data.all$PlayerID[i + 1]){
+      data.all <- data.all[-i,]
+      
+    }
+  }
+  
+  if(i != 1){
+    
+    if(is.even(data.all$Order[i]) == TRUE &
+       data.all$PlayerID[i] != data.all$PlayerID[i + 1] &
+       data.all$PlayerID[i] != data.all$PlayerID[i - 1]){
+      
+      data.all <- data.all[-i,]
+    }
+  }
+}
+
 #data.all$Level <- as.factor(data.all$Level)
 data.all$GroupID <- as.character(data.all$GroupID)
 data.all$PlayerID <- as.character(data.all$PlayerID)
 data.all$Track<- as.factor(data.all$Track)
+
 data.all <- filter(data.all, FinishTime < 100)
 data.all <- filter(data.all, Body == "Bayes" | Body == "Nightingale" | Body == "Gauss")
-data.all <- filter(data.all, Level == "Tutorial" | Level == "CreateCar" | Level == "ChooseCar")
+data.all <- filter(data.all, Level == "Tutorial" | Level == "Paired")
 data.all <- filter(data.all, Track == "Tutorial" | Track == "StraightTrack" | Track == "OvalTrack" | Track == "8Track" | Track == "ComplexTrack" | Track == "VeryComplexTrack")
 
+#Filtering Date
+#data.all <- data.all %>% separate(GameDate, c("Date", "Time"), " ")
+#data.all$Date <- as.Date(data.all$Date, format = "%m/%d/%Y")
+#data.all <- data.all %>% filter(Date >= as.Date("01/01/2020", format = "%m/%d/%Y"))
+
+
+
+#Adding Order2 Column
+data.all$Order2 <- NA
+
+for(i in 1:nrow(data.all)){
+  
+  if(IsOdd(data.all$Order[i]) == TRUE){
+    data.all$Order2[i] <- 1
+    
+  } else{
+    
+    data.all$Order2[i] <- 2
+  }
+}
+
+#Adding Player2 Column
+data.all$PlayerID2 <- NA
+
+counter <- 1
+for(i in 1:nrow(data.all)){
+  
+  if(i == nrow(data.all)){
+    break
+  }
+  
+  if(data.all$PlayerID[i] == data.all$PlayerID[i+1] &
+     data.all$Track[i] == data.all$Track[i + 1] &
+     data.all$Level[i] == data.all$Level[i + 1]){
+    
+    if(IsOdd(data.all$Order2[i]) == TRUE &
+       is.even(data.all$Order2[i + 1]) == TRUE &
+       data.all$Order2[i+1] == data.all$Order2[i] + 1){
+      
+      data.all$PlayerID2[i] <- paste(data.all$PlayerID[i], counter, sep = "")
+      data.all$PlayerID2[i + 1] <- paste(data.all$PlayerID[i], counter, sep = "")
+    }
+    
+    if(is.even(data.all$Order2[i]) == TRUE &
+       IsOdd(data.all$Order2[i + 1] == TRUE)){
+      
+      counter <- counter + 1
+    } 
+    
+  } else {
+    counter <- 1
+  }
+  
+  
+}
+
+data.all <- data.all %>% filter(!(is.na(data.all$PlayerID2)))
+
+#Data for Checkbox
+removed.data <- data.all
+
+removed.data$TempColumn <- 0
+
+for(i in 1:nrow(removed.data)){
+  
+  if(removed.data$TimeOffTrack[i] > 0.3){
+    
+    removed.data$TempColumn[i] <- 1
+  }
+}
+
+for(i in 1:nrow(removed.data)){
+  
+  if(i == nrow(removed.data)){
+    
+    break
+  }
+  
+  if(removed.data$PlayerID2[i] != removed.data$PlayerID2[i + 1]){}
+  
+  
+  
+  if(removed.data$PlayerID2[i] == removed.data$PlayerID2[i + 1] &
+     (removed.data$TempColumn[i] == 1 |
+      removed.data$TempColumn[i + 1] == 1)){
+    
+    removed.data$TempColumn[i] <-  1
+    removed.data$TempColumn[i + 1] <-  1
+    
+  }
+  
+}
+
+removed.data <- removed.data %>% filter(TempColumn == 0)
+
+
+
+
+#For Inputs
 all_groups <- sort(unique(data.all$GroupID))
 all_players <- sort(unique(data.all$PlayerID))
 all_tracks <- sort(unique(data.all$Track))
@@ -39,7 +195,7 @@ ui <- fluidPage(
                   selected = "stest"),
       
       selectInput("levels", "Level",
-                  choices = c("Tutorial", "ChooseCar", "CreateCar"),
+                  choices = c("Tutorial", "Paired"),
                   multiple = TRUE,
                   selectize = TRUE,
                   selected = "Tutorial"),
@@ -86,7 +242,9 @@ ui <- fluidPage(
                   selected = "None",
                   multiple = FALSE),
       
-      checkboxInput('filterPData',"Filter Paired Data",FALSE),
+      checkboxInput("filterPData","Filter Paired Data",FALSE),
+      
+      
       
       downloadButton('downloadData', label = "Racer Data")
       
@@ -117,34 +275,73 @@ server <- function(input, output,session) {
     
   })  
   
+  plotDataR <- reactive({
+    if("all" %in% input$playerID)
+    {filter(removed.data, GroupID %in% input$groupID, Level %in% input$levels)}
+    else{filter(removed.data, GroupID %in% input$groupID, Level %in% input$levels, PlayerID %in% input$playerID)}
+    
+  })  
+  
+  
+  
+  
   # Updates PlayerID based upon GroupID
   observe({
     # req() requires a selection from GroupID before any output
     # or reactivity occurs (keeps the app from crashing)
     req(input$groupID)   
     
-    if ("all" %in% input$groupID) {gamedata <- data.all}
-    else{gamedata <- filter(data.all, GroupID == input$groupID)}
+    if(input$filterPData == "FALSE"){
+      
+      
+      if ("all" %in% input$groupID) {gamedata <- data.all}
+      else{gamedata <- filter(data.all, GroupID %in% input$groupID)}
+      
+      updateSelectInput(session, 
+                        "playerID",
+                        choices = c("all", sort(unique(gamedata$PlayerID))),
+                        selected = "all")
+      
+    } else {
+      
+      if ("all" %in% input$groupID) {gamedata <- removed.data}
+      else{gamedata <- filter(removed.data, GroupID %in% input$groupID)}
+      
+      updateSelectInput(session, 
+                        "playerID",
+                        choices = c("all", sort(unique(gamedata$PlayerID))),
+                        selected = "all")
+      
+      
+    }
     
-    updateSelectInput(session, 
-                      "playerID",
-                      choices = c("all", sort(unique(gamedata$PlayerID))),
-                      selected = "all")
   })
+  
   
   
   # Creates Plot 
   output$Plot <- renderPlot({
     req(input$groupID)
-    data.all <- data.all[data.all$Level %in% input$levels, ]
-    data.all <- data.all[data.all$Track %in% input$tracks, ]
+    
+    if(input$filterPData == "TRUE"){
+      
+      plotData <- plotDataR()
+      
+    } else {
+      
+      plotData <- plotData()
+      
+    }
+    
+    plotData <- plotData[plotData$Level %in% input$levels, ]
+    plotData <- plotData[plotData$Track %in% input$tracks, ]
     
     if("all" %in% input$playerID) {
-      plotData <- data.all[data.all$GroupID %in% input$groupID, ]
+      plotData <- plotData[plotData$GroupID %in% input$groupID, ]
     }
     else{
-      plotData <- data.all[data.all$GroupID %in% input$groupID, ]
-      plotData = plotData[plotData$PlayerID %in% input$playerID, ]
+      plotData <- plotData[plotData$GroupID %in% input$groupID, ]
+      plotData <-  plotData[plotData$PlayerID %in% input$playerID, ]
     }
     
     
@@ -160,6 +357,7 @@ server <- function(input, output,session) {
         labs(x = input$xvar, y = input$yvar, title = paste("Plot of",input$yvar, "by",input$xvar, "and colored by", input$color)) +
         theme(axis.text.x = element_text(size = 14), 
               axis.title = element_text(size = 16), 
+              plot.title = element_text(size = 18, face = "bold"),
               legend.title = element_text(size = 14), 
               legend.text = element_text(size = 12), 
               axis.text.y = element_text(size = 11)) +
@@ -178,19 +376,28 @@ server <- function(input, output,session) {
         labs(x = input$xvar, y = input$yvar, title = paste("Plot of",input$yvar, "by",input$xvar, "and colored by", input$color)) +
         theme(axis.text.x = element_text(size = 14), 
               axis.title = element_text(size = 16), 
-              plot.title = element_text(size = 18),
+              plot.title = element_text(size = 18, face = "bold"),
               legend.title = element_text(size = 14), 
               legend.text = element_text(size = 12), 
               axis.text.y = element_text(size = 11)) +
         scale_color_manual(values = cols)
       
-      ### change plot colors by the color of the car
       
     }
     
     
     
     output$why3 = renderPrint({
+      
+      if(input$filterPData == "TRUE"){
+        
+        plotData <- plotDataR()
+        
+      } else {
+        
+        plotData <- plotData()
+        
+      }
       
       YVariable = plotData %>% pull(input$yvar)
       XVariable = plotData %>% pull(input$xvar)
@@ -235,6 +442,16 @@ server <- function(input, output,session) {
     
     output$why4 = renderPrint({
       
+      if(input$filterPData == "TRUE"){
+        
+        plotData <- plotDataR()
+        
+      } else {
+        
+        plotData <- plotData()
+        
+      }
+      
       YVariable = plotData %>% pull(input$yvar)
       XVariable = plotData %>% pull(input$xvar)
       ColorVariable = plotData %>% pull(input$color)
@@ -278,6 +495,17 @@ server <- function(input, output,session) {
     })
     
     output$why = renderPrint({
+      
+      if(input$filterPData == "TRUE"){
+        
+        plotData <- plotDataR()
+        
+      } else {
+        
+        plotData <- plotData()
+        
+      }
+      
       YVariable = plotData %>% pull(input$yvar)
       XVariable = plotData %>% pull(input$xvar)
       ColorVariable = plotData %>% pull(input$color)
@@ -303,6 +531,17 @@ server <- function(input, output,session) {
     
     
     output$why2 = renderPrint({
+      
+      if(input$filterPData == "TRUE"){
+        
+        plotData <- plotDataR()
+        
+      } else {
+        
+        plotData <- plotData()
+        
+      }
+      
       YVariable = plotData %>% pull(input$yvar)
       XVariable = plotData %>% pull(input$xvar)
       ColorVariable = plotData %>% pull(input$color)
