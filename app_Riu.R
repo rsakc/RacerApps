@@ -134,11 +134,10 @@ for(i in 1:nrow(data.all)){
 
 data.all <- data.all %>% filter(!(is.na(data.all$PlayerID2)))
 
-
+#Data for Checkbox
 removed.data <- data.all
 
 removed.data$TempColumn <- 0
-  
   
   for(i in 1:nrow(removed.data)){
     
@@ -172,26 +171,6 @@ removed.data$TempColumn <- 0
   
   removed.data <- removed.data %>% filter(TempColumn == 0)
   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -340,41 +319,36 @@ server <- function(input, output,session) {
 
   
   
-  
-  
-  
-  
-  
   # Creates Plot 
   output$Plot <- renderPlot({
     req(input$groupID)
     
     if(input$filterPData == "TRUE"){
       
-      plotData1 <- plotDataR()
+      plotData <- plotDataR()
     
     } else {
         
-      plotData1 <- plotData()
+      plotData <- plotData()
      
       }
    
-    plotData1 <- plotData1[plotData1$Level %in% input$levels, ]
-    plotData1 <- plotData1[plotData1$Track %in% input$tracks, ]
+    plotData <- plotData[plotData$Level %in% input$levels, ]
+    plotData <- plotData[plotData$Track %in% input$tracks, ]
     
     if("all" %in% input$playerID) {
-      plotData1 <- plotData1[plotData1$GroupID %in% input$groupID, ]
+      plotData <- plotData[plotData$GroupID %in% input$groupID, ]
     }
     else{
-      plotData1 <- plotData1[plotData1$GroupID %in% input$groupID, ]
-      plotData1 <-  plotData1[plotData1$PlayerID %in% input$playerID, ]
+      plotData <- plotData[plotData$GroupID %in% input$groupID, ]
+      plotData <-  plotData[plotData$PlayerID %in% input$playerID, ]
     }
     
     
     if (input$bplot == "TRUE"){
       
       cols <- c("Bayes" = "blue", "Gauss" = "red", "Nightingale" = "orange")
-      myplot <- ggplot(data = plotData1, aes_string(x = input$xvar, y = input$yvar, color=input$color)) +
+      myplot <- ggplot(data = plotData, aes_string(x = input$xvar, y = input$yvar, color=input$color)) +
         geom_boxplot() +
         geom_point(position=position_dodge(0.8)) +
         #geom_dotplot(binaxis='y', stackdir='center', dotsize = .5, position=position_dodge(0.8)) + 
@@ -392,7 +366,7 @@ server <- function(input, output,session) {
        } else {
       
       cols <- c("Bayes" = "blue", "Gauss" = "red", "Nightingale" = "orange")   
-      myplot <- ggplot(data = plotData1, aes_string(x = input$xvar, y = input$yvar, color=input$color), plot.title = element_text(size = 18)) +
+      myplot <- ggplot(data = plotData, aes_string(x = input$xvar, y = input$yvar, color=input$color), plot.title = element_text(size = 18)) +
         #geom_boxplot()+
         geom_point(position=position_dodge(0.8)) +
         #geom_dotplot(binaxis='y', stackdir='center', dotsize = .5, position=position_dodge(0.8)) + 
