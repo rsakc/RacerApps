@@ -8,6 +8,7 @@ library(purrr)
 library(gdata)
 library(DescTools)
 library(schoolmath)
+library(stringr)
 
 ##RACER1 DATA
 
@@ -76,8 +77,8 @@ data.all <- filter(data.all, Body == "Bayes" | Body == "Nightingale" | Body == "
 data.all <- filter(data.all, Level == "Tutorial" | Level == "Paired")
 data.all <- filter(data.all, Track == "Tutorial" | Track == "StraightTrack" | Track == "OvalTrack" | Track == "8Track" | Track == "ComplexTrack" | Track == "VeryComplexTrack")
 
-#Filtering Date
-#data.all <- data.all %>% separate(GameDate, c("Date", "Time"), " ")
+#Filtering By Date
+#data.all <- data.all %>% mutate(Date = str_sub(GameDate, 1, 9))
 #data.all$Date <- as.Date(data.all$Date, format = "%m/%d/%Y")
 #data.all <- data.all %>% filter(Date >= as.Date("01/01/2020", format = "%m/%d/%Y"))
 
@@ -131,6 +132,8 @@ for(i in 1:nrow(data.all)){
   
   
 }
+
+#Filtering out NAs
 data.all <- data.all %>% filter(!(is.na(data.all$PlayerID2)))
 
 #Data for Checkbox
@@ -634,7 +637,15 @@ server <- function(input, output,session) {
           #  pairs2 <- filter(pairs2, odds2 == 1)
            # pairs2 = arrange(pairs2, Car, PlayerID, Order2)
             
+            
+           if(nlevels(dropped) == 2) {
             t.test(FinishTime ~ Car, data = plotData, paired = TRUE)
+             
+           } else {
+             "paired t-tests are only valid with there are exactly two groups."
+             
+           }
+          
           #}
          # else{
             #"Paired tests can only be calculated for races completed in the Tutorial or Paired t-test game options."
