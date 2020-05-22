@@ -12,10 +12,10 @@ library(schoolmath)
 ##RACER1 DATA
 
 #Raw Data
-#data.all <-read.csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdata.php") 
+data.all <-read.csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdata.php") 
 
 #Cleaner Data
-data.all <-read.csv("data/RacerClean.csv") 
+#data.all <-read.csv("data/RacerClean.csv") 
 
 
 #Reordering Rows if Needed
@@ -131,7 +131,6 @@ for(i in 1:nrow(data.all)){
   
   
 }
-
 data.all <- data.all %>% filter(!(is.na(data.all$PlayerID2)))
 
 #Data for Checkbox
@@ -173,12 +172,20 @@ removed.data <- removed.data %>% filter(TempColumn == 0)
 
 
 
-
 #For Inputs
 all_groups <- sort(unique(data.all$GroupID))
 all_players <- sort(unique(data.all$PlayerID))
 all_tracks <- sort(unique(data.all$Track))
 
+
+#New Order Column which is Categorical
+# data.all <- data.all %>% rename(NOrder = Order)
+# data.all$Order <- data.all$NOrder
+# data.all$Order <- as.factor(data.all$Order)
+
+#Making Order 2 Categorical
+data.all$Order2 <- as.factor(data.all$Order2)
+removed.data$Order2 <- as.factor(removed.data$Order2)
 
 ui <- fluidPage(
   # App title ----
@@ -189,14 +196,14 @@ ui <- fluidPage(
       
       selectInput(inputId = "groupID",
                   label = "Group ID:", 
-                  choices =  c(all_groups),
+                  choices =  c("all", all_groups),
                   multiple = TRUE,
                   selectize = TRUE,
                   selected = "stest"),
       
       selectInput("levels", "Level",
                   choices = c("Tutorial", "Paired"),
-                  multiple = TRUE,
+                  multiple = FALSE,
                   selectize = TRUE,
                   selected = "Tutorial"),
       
@@ -217,14 +224,14 @@ ui <- fluidPage(
       selectInput(inputId = "xvar",
                   label = "X Axis:",
                   #columns of the dataset
-                  choices = c("Body", "Engine", "Tire", "Track", "Order", "PlayerID"),
+                  choices = c("Body", "Engine", "Tire", "Track", "Order2", "PlayerID"),
                   selected = "Body",
                   multiple = FALSE),
       
       selectInput(inputId = "yvar",
                   label = "Y Axis:",
                   #columns of the dataset
-                  choices = c("FinishTime", "TimeTo30", "TimeTo60", "TopSpeedReached"),
+                  choices = c("FinishTime", "TopSpeedReached", "TimeTo30", "TimeTo60"),
                   selected = "FinishTime",
                   multiple = FALSE),
       
@@ -232,7 +239,7 @@ ui <- fluidPage(
       
       selectInput(inputId = "color",
                   label = "Color by",
-                  choices = c("Body", "Engine", "Tire", "Track", "Order", "PlayerID"),
+                  choices = c("Body", "Engine", "Tire", "Track", "Order2", "PlayerID"),
                   selected = "Body",
                   multiple = FALSE),
       
@@ -242,7 +249,7 @@ ui <- fluidPage(
                   selected = "None",
                   multiple = FALSE),
       
-      checkboxInput("filterPData","Filter Paired Data",FALSE),
+      checkboxInput("filterPData","Remove Off Track Data",FALSE),
       
       
       
@@ -347,6 +354,8 @@ server <- function(input, output,session) {
     
     if (input$bplot == "TRUE"){
       
+      
+      if(input$color %in% c("Body", "Engine", "Tire") == TRUE){
       cols <- c("Bayes" = "blue", "Gauss" = "red", "Nightingale" = "orange")
       myplot <- ggplot(data = plotData, aes_string(x = input$xvar, y = input$yvar, color=input$color)) +
         geom_boxplot() +
@@ -355,17 +364,37 @@ server <- function(input, output,session) {
         #stat_summary(fun.y=mean, geom="point", shape = 18,
         #             size=3, color="red") +
         labs(x = input$xvar, y = input$yvar, title = paste("Plot of",input$yvar, "by",input$xvar, "and colored by", input$color)) +
-        theme(axis.text.x = element_text(size = 14), 
-              axis.title = element_text(size = 16), 
-              plot.title = element_text(size = 18, face = "bold"),
-              legend.title = element_text(size = 14), 
-              legend.text = element_text(size = 12), 
-              axis.text.y = element_text(size = 11)) +
+        theme(axis.text.x = element_text(size = 16), 
+              axis.title = element_text(size = 18), 
+              plot.title = element_text(size = 20, face = "bold"),
+              legend.title = element_text(size = 16), 
+              legend.text = element_text(size = 14), 
+              axis.text.y = element_text(size = 14)) +
         scale_color_manual(values = cols)
+      
+      } else {
+        
+        myplot <- ggplot(data = plotData, aes_string(x = input$xvar, y = input$yvar, color=input$color)) +
+          geom_boxplot() +
+          geom_point(position=position_dodge(0.8)) +
+          #geom_dotplot(binaxis='y', stackdir='center', dotsize = .5, position=position_dodge(0.8)) + 
+          #stat_summary(fun.y=mean, geom="point", shape = 18,
+          #             size=3, color="red") +
+          labs(x = input$xvar, y = input$yvar, title = paste("Plot of",input$yvar, "by",input$xvar, "and colored by", input$color)) +
+          theme(axis.text.x = element_text(size = 16), 
+                axis.title = element_text(size = 18), 
+                plot.title = element_text(size = 20, face = "bold"),
+                legend.title = element_text(size = 16), 
+                legend.text = element_text(size = 14), 
+                axis.text.y = element_text(size = 14)) +
+          scale_color_manual(values = cols)
+      
+      }
       
       
     } else {
       
+      if(input$color %in% c("Body", "Engine", "Tire") == TRUE){
       cols <- c("Bayes" = "blue", "Gauss" = "red", "Nightingale" = "orange")   
       myplot <- ggplot(data = plotData, aes_string(x = input$xvar, y = input$yvar, color=input$color), plot.title = element_text(size = 18)) +
         #geom_boxplot()+
@@ -374,14 +403,31 @@ server <- function(input, output,session) {
         #stat_summary(fun.y=mean, geom="point", shape = 18,
         #             size=3, color="red") +
         labs(x = input$xvar, y = input$yvar, title = paste("Plot of",input$yvar, "by",input$xvar, "and colored by", input$color)) +
-        theme(axis.text.x = element_text(size = 14), 
-              axis.title = element_text(size = 16), 
-              plot.title = element_text(size = 18, face = "bold"),
-              legend.title = element_text(size = 14), 
-              legend.text = element_text(size = 12), 
-              axis.text.y = element_text(size = 11)) +
+        theme(axis.text.x = element_text(size = 16), 
+              axis.title = element_text(size = 18), 
+              plot.title = element_text(size = 20, face = "bold"),
+              legend.title = element_text(size = 16), 
+              legend.text = element_text(size = 14), 
+              axis.text.y = element_text(size = 14)) +
         scale_color_manual(values = cols)
-      
+     
+      } else{
+        myplot <- ggplot(data = plotData, aes_string(x = input$xvar, y = input$yvar, color=input$color), plot.title = element_text(size = 18)) +
+          #geom_boxplot()+
+          geom_point(position=position_dodge(0.8)) +
+          #geom_dotplot(binaxis='y', stackdir='center', dotsize = .5, position=position_dodge(0.8)) + 
+          #stat_summary(fun.y=mean, geom="point", shape = 18,
+          #             size=3, color="red") +
+          labs(x = input$xvar, y = input$yvar, title = paste("Plot of",input$yvar, "by",input$xvar, "and colored by", input$color)) +
+          theme(axis.text.x = element_text(size = 16), 
+                axis.title = element_text(size = 18), 
+                plot.title = element_text(size = 20, face = "bold"),
+                legend.title = element_text(size = 16), 
+                legend.text = element_text(size = 14), 
+                axis.text.y = element_text(size = 14))
+        
+       }
+    
       
     }
     
@@ -402,7 +448,7 @@ server <- function(input, output,session) {
       YVariable = plotData %>% pull(input$yvar)
       XVariable = plotData %>% pull(input$xvar)
       ColorVariable = plotData %>% pull(input$color)
-      ColorVariable = droplevels(ColorVariable)
+      ColorVariable = droplevels(as.factor(ColorVariable))
       XVariable = drop.levels(XVariable)
       YVariable = drop.levels(YVariable)
       if (input$tests == "ANOVA") {
@@ -455,7 +501,7 @@ server <- function(input, output,session) {
       YVariable = plotData %>% pull(input$yvar)
       XVariable = plotData %>% pull(input$xvar)
       ColorVariable = plotData %>% pull(input$color)
-      ColorVariable = droplevels(ColorVariable)
+      ColorVariable = droplevels(as.factor(ColorVariable))
       PlayerID = plotData$PlayerID
       if (input$tests == "Block Design") {
         
@@ -509,12 +555,29 @@ server <- function(input, output,session) {
       YVariable = plotData %>% pull(input$yvar)
       XVariable = plotData %>% pull(input$xvar)
       ColorVariable = plotData %>% pull(input$color)
-      ColorVariable = droplevels(ColorVariable)
+     
+      # # if(input$xvar == "PlayerID" & input$color == "PlayerID" & input$tests == "two-sample t test"){
+      #   
+      #    colorlevels <- droplevels(as.factor(XVariable))
+      #     
+      #    if(nlevels(XVariable) == 2){
+      #      t.test(YVariable ~ XVariable)
+      #    } else{
+      #      "t-tests are only valid with there are exactly two groups."
+      #    }
+     
+        
+        
+      # }
+      
+      ColorVariable = droplevels(as.factor(ColorVariable))
       colorlevel = nlevels(ColorVariable)
       if (input$tests == "two-sample t-test"){
         
+        
+        
         if(input$xvar == input$color) {
-          dropped = droplevels(XVariable)
+          dropped = droplevels(as.factor(XVariable))
           
           if(nlevels(dropped) == 2) {
             t.test(YVariable ~ XVariable)
@@ -528,6 +591,12 @@ server <- function(input, output,session) {
         }
       }
     })
+    
+    
+    
+    
+    
+    
     
     
     output$why2 = renderPrint({
@@ -545,31 +614,31 @@ server <- function(input, output,session) {
       YVariable = plotData %>% pull(input$yvar)
       XVariable = plotData %>% pull(input$xvar)
       ColorVariable = plotData %>% pull(input$color)
-      ColorVariable = droplevels(ColorVariable)
+      ColorVariable = droplevels(as.factor(ColorVariable))
       colorlevel = nlevels(ColorVariable)
       if (input$tests == "paired t-test"){
         
         if(input$xvar == input$color) {
-          dropped = droplevels(XVariable)
+          dropped = droplevels(as.factor(XVariable))
           
-          if(input$levels =="Tutorial" & input$tracks =="Tutorial") {
+         # if(input$levels %in% c("Tutorial", "Paired") & input$tracks %in% c("Tutorial","StraightTrack", "OvalTrack", "8Track", "ComplexTrack")) {
             ###In the following we want Car to be input$xvar and FinishTime to be input$yvar, but it won't run then
-            plotData = arrange(plotData, PlayerID, Order, Car)
+           # plotData = arrange(plotData, PlayerID, Order2, Car)
             #Xvar <- as.data.frame(plotData$input$xvar)
             #names(Xvar) <- ("Xvar")
             #Yvar <- as.data.frame(plotData$input$yvar)
             #names(Xvar) <- ("Yvar")
             #pairs2 <- bind_cols(Xvar, Yvar, plotData)
             ### If Order is odd and Order +1 is odd, then drop Order (not an even number of tests)
-            pairs2 <- mutate(plotData, odds2 = ifelse(Order%% 2 != 0 & lead(Order)%% 2 != 0, 0,1))
-            pairs2 <- filter(pairs2, odds2 == 1)
-            pairs2 = arrange(pairs2, Car, PlayerID, Order)
+           # pairs2 <- mutate(plotData, odds2 = ifelse(Order2%% 2 != 0 & lead(Order2)%% 2 != 0, 0,1))
+          #  pairs2 <- filter(pairs2, odds2 == 1)
+           # pairs2 = arrange(pairs2, Car, PlayerID, Order2)
             
-            t.test(FinishTime ~ Car, data = pairs2, paired = TRUE)
-          }
-          else{
-            "Paired tests can only be calculated for races completed in the Tutorial or Paired t-test game options."
-          } 
+            t.test(FinishTime ~ Car, data = plotData, paired = TRUE)
+          #}
+         # else{
+            #"Paired tests can only be calculated for races completed in the Tutorial or Paired t-test game options."
+          #} 
         }  
         else{
           "The X-axis and the Color variable should be the same for a t-test."
