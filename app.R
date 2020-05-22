@@ -11,7 +11,7 @@ library(schoolmath)
 library(stringr)
 
 ##RACER1 DATA
-
+  
 #Raw Data
 data.all <-read.csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdata.php") 
 
