@@ -18,54 +18,11 @@ data.all <-read.csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdat
 #Cleaner Data
 #data.all <-read.csv("data/RacerClean.csv") 
 
+#2020 Data Only
+data.all <- data.all %>% mutate(Date = str_sub(GameDate, 1, 9))
+data.all$Date <- as.Date(data.all$Date, format = "%m/%d/%Y")
+data.all <- data.all %>% filter(Date >= as.Date("01/01/2020", format = "%m/%d/%Y"))
 
-#Reordering Rows if Needed
-for(i in 1:nrow(data.all)){
-  
-  if(i == nrow(data.all)){
-    break
-  }
-  if(data.all$PlayerID[i] == data.all$PlayerID[i + 1] &
-     data.all$Level[i] == data.all$Level[i + 1] &
-     data.all$Track[i] == data.all$Track[i + 1]){
-    
-    if(data.all$Order[i] > data.all$Order[i + 1]){
-      
-      temp <- data.all$Order[i + 1]
-      data.all$Order[i + 1] <- data.all$Order[i]
-      data.all$Order[i] <- temp
-      
-      
-    }
-  }
-}
-
-#Only Keeping Paired Data
-for(i in 1:(nrow(data.all))){
-  
-  if(i == nrow(data.all)){
-    
-    break
-  }
-  
-  if(IsOdd(data.all$Order[i]) == TRUE){
-    
-    if(data.all$PlayerID[i] != data.all$PlayerID[i + 1]){
-      data.all <- data.all[-i,]
-      
-    }
-  }
-  
-  if(i != 1){
-    
-    if(is.even(data.all$Order[i]) == TRUE &
-       data.all$PlayerID[i] != data.all$PlayerID[i + 1] &
-       data.all$PlayerID[i] != data.all$PlayerID[i - 1]){
-      
-      data.all <- data.all[-i,]
-    }
-  }
-}
 
 #data.all$Level <- as.factor(data.all$Level)
 data.all$GroupID <- as.character(data.all$GroupID)
@@ -77,10 +34,65 @@ data.all <- filter(data.all, Body == "Bayes" | Body == "Nightingale" | Body == "
 data.all <- filter(data.all, Level == "Tutorial" | Level == "Paired")
 data.all <- filter(data.all, Track == "Tutorial" | Track == "StraightTrack" | Track == "OvalTrack" | Track == "8Track" | Track == "ComplexTrack" | Track == "VeryComplexTrack")
 
-#Filtering By Date
-#data.all <- data.all %>% mutate(Date = str_sub(GameDate, 1, 9))
-#data.all$Date <- as.Date(data.all$Date, format = "%m/%d/%Y")
-#data.all <- data.all %>% filter(Date >= as.Date("01/01/2020", format = "%m/%d/%Y"))
+
+#Sort Data
+data.all <- data.all %>% arrange(GroupID, PlayerID, Level, Track, Order)
+
+
+#Reordering Rows if Needed
+# for(i in 1:nrow(data.all)){
+#   
+#   if(i == nrow(data.all)){
+#     break
+#   }
+#   if(data.all$PlayerID[i] == data.all$PlayerID[i + 1] &
+#      data.all$Level[i] == data.all$Level[i + 1] &
+#      data.all$Track[i] == data.all$Track[i + 1]){
+#     
+#     if(data.all$Order[i] > data.all$Order[i + 1]){
+#       
+#       temp <- data.all$Order[i + 1]
+#       data.all$Order[i + 1] <- data.all$Order[i]
+#       data.all$Order[i] <- temp
+#       
+#       
+#     }
+#   }
+# }
+
+
+#Only Keeping Paired Data
+# for(i in 1:(nrow(data.all))){
+#   
+#   if(i == nrow(data.all)){
+#     
+#     break
+#   }
+#   
+#   if(IsOdd(data.all$Order[i]) == TRUE &
+#      data.all$PlayerID[i] != data.all$PlayerID[i + 1] &
+#      data.all$PlayerID[i] != data.all$PlayerID[i - 1]){
+#     
+#       data.all <- data.all[-i,]
+#       
+#   }
+#   
+#   if(i != 1){
+#     
+#     if(is.even(data.all$Order[i]) == TRUE &
+#        data.all$PlayerID[i] != data.all$PlayerID[i + 1] &
+#        data.all$PlayerID[i] != data.all$PlayerID[i - 1]){
+#       
+#       data.all <- data.all[-i,]
+#     }
+#   }
+# }
+
+
+#Removes "Single" Data
+# data.all <- subset(data.all, duplicated(PlayerID) | duplicated(PlayerID, fromLast = TRUE))
+# data.all <- subset(data.all, duplicated(GroupID) | duplicated(GroupID, fromLast = TRUE))
+
 
 
 
@@ -97,6 +109,36 @@ for(i in 1:nrow(data.all)){
     data.all$Order2[i] <- 2
   }
 }
+
+
+#Fixing Order 2 (The Order)
+
+for(i in 1:nrow(data.all)){
+  
+  if(i == nrow(data.all)){
+    
+    break
+  }
+  
+  
+  if(data.all$PlayerID[i] == data.all$PlayerID[i + 1]){
+    
+    if(data.all$Order2[i] > data.all$Order2[i + 1]){
+      
+      temp <- data.all$Order2[i]
+      data.all$Order2[i] <- data.all$Order2[i + 1]
+      data.all$Order2[i + 1] <- temp
+      
+    }
+    
+  }
+  
+}
+
+
+
+
+
 
 #Adding Player2 Column
 data.all$PlayerID2 <- NA
@@ -120,6 +162,8 @@ for(i in 1:nrow(data.all)){
       data.all$PlayerID2[i + 1] <- paste(data.all$PlayerID[i], counter, sep = "")
     }
     
+
+    
     if(is.even(data.all$Order2[i]) == TRUE &
        IsOdd(data.all$Order2[i + 1] == TRUE)){
       
@@ -135,6 +179,7 @@ for(i in 1:nrow(data.all)){
 
 #Filtering out NAs
 data.all <- data.all %>% filter(!(is.na(data.all$PlayerID2)))
+
 
 #Data for Checkbox
 removed.data <- data.all
@@ -190,6 +235,9 @@ all_tracks <- sort(unique(data.all$Track))
 data.all$Order2 <- as.factor(data.all$Order2)
 removed.data$Order2 <- as.factor(removed.data$Order2)
 
+
+
+
 ui <- fluidPage(
   # App title ----
   titlePanel("Racer Hypothesis Tests"),
@@ -199,7 +247,7 @@ ui <- fluidPage(
       
       selectInput(inputId = "groupID",
                   label = "Group ID:", 
-                  choices =  c("all", all_groups),
+                  choices =  c(all_groups),
                   multiple = TRUE,
                   selectize = TRUE,
                   selected = "stest"),
@@ -389,8 +437,8 @@ server <- function(input, output,session) {
                 plot.title = element_text(size = 20, face = "bold"),
                 legend.title = element_text(size = 16), 
                 legend.text = element_text(size = 14), 
-                axis.text.y = element_text(size = 14)) +
-          scale_color_manual(values = cols)
+                axis.text.y = element_text(size = 14)) 
+        
       
       }
       
@@ -451,17 +499,18 @@ server <- function(input, output,session) {
       YVariable = plotData %>% pull(input$yvar)
       XVariable = plotData %>% pull(input$xvar)
       ColorVariable = plotData %>% pull(input$color)
-      ColorVariable = droplevels(as.factor(ColorVariable))
-      XVariable = drop.levels(XVariable)
-      YVariable = drop.levels(YVariable)
-      if (input$tests == "ANOVA") {
+      ColorVariable = drop.levels(ColorVariable)
+      XVariable = drop.levels(as.factor(XVariable))
+     #YVariable = drop.levels(YVariable)
+      
+      if(input$tests == "ANOVA") {
         if(nlevels(ColorVariable) > 1){
           anovatest = anova(aov(YVariable ~ XVariable + ColorVariable + XVariable*ColorVariable))
-        }
-        
-        else{
-          anovatest = anova(aov(YVariable ~ XVariable))
           
+         }
+       
+        else{
+          anovatest = aov(YVariable ~ XVariable)
         }
         
         check2 = tidy(anovatest)
@@ -473,17 +522,18 @@ server <- function(input, output,session) {
         check2$sumsq = round(check2$sumsq, digits = 2)
         check2$meansq = round(check2$meansq, digits = 2)
         check2$statistic = round(check2$statistic, digits = 2)
-        # check2[is.na(check2)] = " "
-        for(i in 1:(length(check2$p.value) - 2)){
-          if(check2$p.value[i] < 0.001){
-            check2$p.value[i] = "<0.001"
-          } 
-          
-          else{
-            check2$p.value[i] = round(check2$p.value[i], digits = 4)
-          } 
-          
-        }
+       
+      
+        #   for(i in 1:(length(check2$p.value) - 2)){
+        #   if(check2$p.value[i] < 0.001){
+        #     check2$p.value[i] = "<0.001"
+        #   }
+        # 
+        #   else{
+        #     check2$p.value[i] = round(check2$p.value[i], digits = 4)
+        #   }
+        # 
+        # }
         
         check2
       }
@@ -504,9 +554,17 @@ server <- function(input, output,session) {
       YVariable = plotData %>% pull(input$yvar)
       XVariable = plotData %>% pull(input$xvar)
       ColorVariable = plotData %>% pull(input$color)
-      ColorVariable = droplevels(as.factor(ColorVariable))
+      
+      ColorVariable = drop.levels(ColorVariable)
       PlayerID = plotData$PlayerID
-      if (input$tests == "Block Design") {
+    
+        if (input$tests == "Block Design") {
+        
+        if(input$xvar == "PlayerID" | input$color == "PlayerID"){
+          
+          "When using the Block Design, the X-axis/Color Variable cannot be PlayerID"
+        } else {
+        
         
         if(nlevels(ColorVariable) > 1){
           anovatest = aov(YVariable ~ PlayerID + XVariable + ColorVariable + XVariable*ColorVariable)
@@ -528,18 +586,19 @@ server <- function(input, output,session) {
         check2$statistic = round(check2$statistic, digits = 2)
         check2 = add_row(check2,term = "Total", df = sum_df, sumsq = sum_ss)
         ## check2[is.na(check2)] = " "
-        for(i in 1:(length(check2$p.value) - 2)){
-          if(check2$p.value[i] < 0.005){
-            check2$p.value[i] = "<0.005"
-          } 
-          
-          else{
-            check2$p.value[i] = round(check2$p.value[i], digits = 4)
-          } 
-          
-        }
+        # for(i in 1:(length(check2$p.value) - 2)){
+        #   if(check2$p.value[i] < 0.005){
+        #     check2$p.value[i] = "<0.005"
+        #   } 
+        #   
+        #   else{
+        #     check2$p.value[i] = round(check2$p.value[i], digits = 4)
+        #   } 
+        #   
+        # }
         
         check2
+        }
       }
     })
     
