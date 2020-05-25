@@ -19,7 +19,7 @@ data.all <-read.csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdat
 #data.all <-read.csv("data/RacerClean.csv") 
 
 #2020 Data Only
-data.all <- data.all %>% mutate(Date = str_sub(GameDate, 1, 9))
+data.all <- data.all %>% mutate(Date = str_sub(GameDate, 1, 10))
 data.all$Date <- as.Date(data.all$Date, format = "%m/%d/%Y")
 data.all <- data.all %>% filter(Date >= as.Date("01/01/2020", format = "%m/%d/%Y"))
 
