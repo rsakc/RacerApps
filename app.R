@@ -111,7 +111,9 @@ for(i in 1:nrow(data.all)){
 }
 
 
-#Fixing Order 2 (The Order)
+#Fixing the Order of Order2 Column to make sure that for all pairs, 1 comes before 2
+
+data.all$flipped <- 0
 
 for(i in 1:nrow(data.all)){
   
@@ -121,13 +123,18 @@ for(i in 1:nrow(data.all)){
   }
   
   
-  if(data.all$PlayerID[i] == data.all$PlayerID[i + 1]){
+  if(data.all$PlayerID[i] == data.all$PlayerID[i + 1] &
+     data.all$flipped[i] == 0 &
+     data.all$flipped[i + 1] == 0){
     
     if(data.all$Order2[i] > data.all$Order2[i + 1]){
       
       temp <- data.all$Order2[i]
       data.all$Order2[i] <- data.all$Order2[i + 1]
       data.all$Order2[i + 1] <- temp
+      
+      data.all$flipped[i] <- 1
+      data.all$flipped[i + 1] <- 1
       
     }
     
@@ -201,11 +208,13 @@ for(i in 1:nrow(removed.data)){
     break
   }
   
-  if(removed.data$PlayerID2[i] != removed.data$PlayerID2[i + 1]){}
+  # if(removed.data$PlayerID2[i] != removed.data$PlayerID2[i + 1]){}
   
   
   
-  if(removed.data$PlayerID2[i] == removed.data$PlayerID2[i + 1] &
+  if((removed.data$PlayerID2[i] == removed.data$PlayerID2[i + 1] & 
+     removed.data$Level[i] == removed.data$Level[i + 1] &
+     removed.data$Track[i] == removed.data$Track[i + 1]) &
      (removed.data$TempColumn[i] == 1 |
       removed.data$TempColumn[i + 1] == 1)){
     
@@ -219,13 +228,6 @@ for(i in 1:nrow(removed.data)){
 removed.data <- removed.data %>% filter(TempColumn == 0)
 
 
-
-#For Inputs
-all_groups <- sort(unique(data.all$GroupID))
-all_players <- sort(unique(data.all$PlayerID))
-all_tracks <- sort(unique(data.all$Track))
-
-
 #New Order Column which is Categorical
 # data.all <- data.all %>% rename(NOrder = Order)
 # data.all$Order <- data.all$NOrder
@@ -237,7 +239,15 @@ removed.data$Order2 <- as.factor(removed.data$Order2)
 
 
 
+#For Inputs
+all_groups <- sort(unique(data.all$GroupID))
+all_players <- sort(unique(data.all$PlayerID))
+all_tracks <- sort(unique(data.all$Track))
 
+
+
+
+#UI
 ui <- fluidPage(
   # App title ----
   titlePanel("Racer Hypothesis Tests"),
@@ -324,6 +334,7 @@ ui <- fluidPage(
   )
 )
 
+#Server
 server <- function(input, output,session) {
   
   plotData <- reactive({
