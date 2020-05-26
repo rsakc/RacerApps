@@ -1,3 +1,4 @@
+#Loading Libraries
 library(shiny)
 library(readr)
 library(ggplot2)
@@ -10,241 +11,133 @@ library(DescTools)
 library(schoolmath)
 library(stringr)
 
-##RACER1 DATA
   
-#Raw Data
+#Importing Data
 data.all <-read.csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdata.php") 
 
-#Cleaner Data
-#data.all <-read.csv("data/RacerClean.csv") 
-
-#2020 Data Only
-data.all <- data.all %>% mutate(Date = str_sub(GameDate, 1, 10))
-data.all$Date <- as.Date(data.all$Date, format = "%m/%d/%Y")
-data.all <- data.all %>% filter(Date >= as.Date("01/01/2020", format = "%m/%d/%Y"))
-
-
-#data.all$Level <- as.factor(data.all$Level)
-data.all$GroupID <- as.character(data.all$GroupID)
-data.all$PlayerID <- as.character(data.all$PlayerID)
-data.all$Track<- as.factor(data.all$Track)
-
+#Filtering Data
 data.all <- filter(data.all, FinishTime < 100)
 data.all <- filter(data.all, Body == "Bayes" | Body == "Nightingale" | Body == "Gauss")
 data.all <- filter(data.all, Level == "Tutorial" | Level == "Paired")
-data.all <- filter(data.all, Track == "Tutorial" | Track == "StraightTrack" | Track == "OvalTrack" | Track == "8Track" | Track == "ComplexTrack" | Track == "VeryComplexTrack")
+data.all <- filter(data.all, Track == "Tutorial" | Track == "StraightTrack" | Track == "OvalTrack" | Track == "8Track" | Track == "ComplexTrack" )
+data.all <- drop.levels(data.all)
+
+## 2020 Data Only (Note there was one bad game in Jan so we start on Feb 1)
+## This should now work for any date:
+data.all <- data.all %>% mutate(Date = str_sub(GameDate, 1, 10))
+data.all$Date <- as.Date(data.all$Date, format = "%m/%d/%Y")
+data.all <- data.all %>% filter(Date >= as.Date("02/01/2020", format = "%m/%d/%Y"))
+
+#Making GroupID and PlayerID a character vector
+data.all$GroupID <- as.character(data.all$GroupID)
+data.all$PlayerID <- as.character(data.all$PlayerID)
+
+#Sort Data in order to create an accurate Order column
+data.all <- data.all %>% arrange(Level, Track, GroupID, PlayerID, Game)
 
 
-#Sort Data
-data.all <- data.all %>% arrange(GroupID, PlayerID, Level, Track, Order)
-
-
-#Reordering Rows if Needed
-# for(i in 1:nrow(data.all)){
-#   
-#   if(i == nrow(data.all)){
-#     break
-#   }
-#   if(data.all$PlayerID[i] == data.all$PlayerID[i + 1] &
-#      data.all$Level[i] == data.all$Level[i + 1] &
-#      data.all$Track[i] == data.all$Track[i + 1]){
-#     
-#     if(data.all$Order[i] > data.all$Order[i + 1]){
-#       
-#       temp <- data.all$Order[i + 1]
-#       data.all$Order[i + 1] <- data.all$Order[i]
-#       data.all$Order[i] <- temp
-#       
-#       
-#     }
-#   }
-# }
-
-
-#Only Keeping Paired Data
-# for(i in 1:(nrow(data.all))){
-#   
-#   if(i == nrow(data.all)){
-#     
-#     break
-#   }
-#   
-#   if(IsOdd(data.all$Order[i]) == TRUE &
-#      data.all$PlayerID[i] != data.all$PlayerID[i + 1] &
-#      data.all$PlayerID[i] != data.all$PlayerID[i - 1]){
-#     
-#       data.all <- data.all[-i,]
-#       
-#   }
-#   
-#   if(i != 1){
-#     
-#     if(is.even(data.all$Order[i]) == TRUE &
-#        data.all$PlayerID[i] != data.all$PlayerID[i + 1] &
-#        data.all$PlayerID[i] != data.all$PlayerID[i - 1]){
-#       
-#       data.all <- data.all[-i,]
-#     }
-#   }
-# }
-
-
-#Removes "Single" Data
-# data.all <- subset(data.all, duplicated(PlayerID) | duplicated(PlayerID, fromLast = TRUE))
-# data.all <- subset(data.all, duplicated(GroupID) | duplicated(GroupID, fromLast = TRUE))
-
-
-
-
-#Adding Order2 Column
-data.all$Order2 <- NA
-
-for(i in 1:nrow(data.all)){
+#Make a working Order column called Order2
+data.all$Order2 <- 0
+data.all$Order2[1] <- 1 
+for(i in 2:nrow(data.all)){
+  if(data.all$PlayerID[i] == data.all$PlayerID[i - 1] &
+     data.all$GroupID[i] == data.all$GroupID[i - 1] &
+     data.all$Track[i] == data.all$Track[i - 1] &
+     data.all$Level[i] == data.all$Level[i - 1]){
+    
+    data.all$Order2[i] <- data.all$Order2[i - 1] + 1
+  } 
   
-  if(IsOdd(data.all$Order[i]) == TRUE){
+  else {
     data.all$Order2[i] <- 1
-    
-  } else{
-    
-    data.all$Order2[i] <- 2
   }
 }
 
+## We only keept the first two clean races
+data.all <- filter(data.all, Order2 < 3)
 
-#Fixing the Order of Order2 Column to make sure that for all pairs, 1 comes before 2
-
-data.all$flipped <- 0
-
+## Don't keep if they only played one race
+data.all$Clean <- "Yes"
 for(i in 1:nrow(data.all)){
-  
-  if(i == nrow(data.all)){
-    
+ 
+   if(i == nrow(data.all)){
     break
   }
   
-  
-  if(data.all$PlayerID[i] == data.all$PlayerID[i + 1] &
-     data.all$flipped[i] == 0 &
-     data.all$flipped[i + 1] == 0){
-    
-    if(data.all$Order2[i] > data.all$Order2[i + 1]){
-      
-      temp <- data.all$Order2[i]
-      data.all$Order2[i] <- data.all$Order2[i + 1]
-      data.all$Order2[i + 1] <- temp
-      
-      data.all$flipped[i] <- 1
-      data.all$flipped[i + 1] <- 1
-      
-    }
-    
-  }
-  
-}
-
-
-
-
-
-
-#Adding Player2 Column
-data.all$PlayerID2 <- NA
-
-counter <- 1
-for(i in 1:nrow(data.all)){
-  
-  if(i == nrow(data.all)){
-    break
-  }
-  
-  if(data.all$PlayerID[i] == data.all$PlayerID[i+1] &
-     data.all$Track[i] == data.all$Track[i + 1] &
-     data.all$Level[i] == data.all$Level[i + 1]){
-    
-    if(IsOdd(data.all$Order2[i]) == TRUE &
-       is.even(data.all$Order2[i + 1]) == TRUE &
-       data.all$Order2[i+1] == data.all$Order2[i] + 1){
-      
-      data.all$PlayerID2[i] <- paste(data.all$PlayerID[i], counter, sep = "")
-      data.all$PlayerID2[i + 1] <- paste(data.all$PlayerID[i], counter, sep = "")
-    }
-    
-
-    
-    if(is.even(data.all$Order2[i]) == TRUE &
-       IsOdd(data.all$Order2[i + 1] == TRUE)){
-      
-      counter <- counter + 1
-    } 
-    
-  } else {
-    counter <- 1
-  }
-  
-  
-}
-
-#Filtering out NAs
-data.all <- data.all %>% filter(!(is.na(data.all$PlayerID2)))
-
-
-#Data for Checkbox
-removed.data <- data.all
-
-removed.data$TempColumn <- 0
-
-for(i in 1:nrow(removed.data)){
-  
-  if(removed.data$TimeOffTrack[i] > 0.3){
-    
-    removed.data$TempColumn[i] <- 1
+  if(data.all$Order2[i] == 1 & data.all$Order2[i+1] == 1){
+    data.all$Clean[i] <- "No"
   }
 }
 
-for(i in 1:nrow(removed.data)){
-  
-  if(i == nrow(removed.data)){
-    
-    break
+# Don't keep if they played the same car twice
+for(i in 2:nrow(data.all)){
+  if(data.all$PlayerID[i] == data.all$PlayerID[i - 1] &
+     data.all$Car[i] == data.all$Car[i - 1]){
+    data.all$Clean[i - 1] <- "No" 
+    data.all$Clean[i] <- "No"
   }
-  
-  # if(removed.data$PlayerID2[i] != removed.data$PlayerID2[i + 1]){}
-  
-  
-  
-  if((removed.data$PlayerID2[i] == removed.data$PlayerID2[i + 1] & 
-     removed.data$Level[i] == removed.data$Level[i + 1] &
-     removed.data$Track[i] == removed.data$Track[i + 1]) &
-     (removed.data$TempColumn[i] == 1 |
-      removed.data$TempColumn[i + 1] == 1)){
-    
-    removed.data$TempColumn[i] <-  1
-    removed.data$TempColumn[i + 1] <-  1
-    
-  }
-  
 }
 
-removed.data <- removed.data %>% filter(TempColumn == 0)
+## We need a checkbox (Use "Only Clean Data)
+data.clean <-  filter(data.all, Clean == "Yes")
 
+## ONLY if the data is clean, we can then filter to eliminate BadDrivers
+## If the "Only Clean Data" is checked, then we can also checkbox "Only Good Drivers"
 
-#New Order Column which is Categorical
-# data.all <- data.all %>% rename(NOrder = Order)
-# data.all$Order <- data.all$NOrder
-# data.all$Order <- as.factor(data.all$Order)
+## We need to take the track into account for bad drivers.
+data.clean$BadDriver <- "No"
+for(i in 2:nrow(data.clean)){
+  if(data.clean$Track[i] == "OvalTrack" &
+     data.clean$PlayerID[i] == data.clean$PlayerID[i - 1] &
+     (data.clean$FinishTime[i] + data.clean$FinishTime[i - 1] > 60 |
+      data.clean$TimeOffTrack[i] + data.clean$TimeOffTrack[i - 1] > 3)){
+    data.clean$BadDriver[i - 1] <- "Yes"
+    data.clean$BadDriver[i] <- "Yes"
+  }
+}
 
-#Making Order 2 Categorical
+for(i in 2:nrow(data.clean)){
+  if(data.clean$Track[i] == "Tutorial" &
+     data.clean$PlayerID[i] == data.clean$PlayerID[i - 1] &
+     (data.clean$FinishTime[i] + data.clean$FinishTime[i - 1] > 50 |
+      data.clean$TimeOffTrack[i] + data.clean$TimeOffTrack[i - 1] > 1)){
+    data.clean$BadDriver[i - 1] <- "Yes"
+    data.clean$BadDriver[i] <- "Yes"
+  }
+}
+
+for(i in 2:nrow(data.clean)){
+  if(data.clean$Track[i] == "StraightTrack" &
+     data.clean$PlayerID[i] == data.clean$PlayerID[i - 1] &
+     (data.clean$FinishTime[i] + data.clean$FinishTime[i - 1] > 40 |
+      data.clean$TimeOffTrack[i] + data.clean$TimeOffTrack[i - 1] > 1)){
+    data.clean$BadDriver[i - 1] <- "Yes"
+    data.clean$BadDriver[i] <- "Yes"
+  }
+}
+
+for(i in 2:nrow(data.clean)){
+  if((data.clean$Track[i] == "8Track" | data.clean$Track[i] == "ComplexTrack") &
+     data.clean$PlayerID[i] == data.clean$PlayerID[i - 1] &
+     data.clean$TimeOffTrack[i] + data.clean$TimeOffTrack[i - 1] > 1){
+    data.clean$BadDriver[i - 1] <- "Yes"
+    data.clean$BadDriver[i] <- "Yes"
+  }
+}
+
+##Checkbox for "Only Good Drivers"
+data.good = filter(data.clean, BadDriver == "No")
+
+#Making Order 2 a factor for the three data sets
 data.all$Order2 <- as.factor(data.all$Order2)
-removed.data$Order2 <- as.factor(removed.data$Order2)
+data.clean$Order2 <- as.factor(data.clean$Order2)
+data.good$Order2 <- as.factor(data.good$Order2)
 
 
-
-#For Inputs
+#To use for Inputs
 all_groups <- sort(unique(data.all$GroupID))
 all_players <- sort(unique(data.all$PlayerID))
 all_tracks <- sort(unique(data.all$Track))
-
-
 
 
 #UI
@@ -261,19 +154,18 @@ ui <- fluidPage(
                   multiple = TRUE,
                   selectize = TRUE,
                   selected = "stest"),
+     
+       selectInput(inputId = "playerID",
+                  label = "Remove Player ID:",
+                  choices =  c(all_players),
+                  multiple = TRUE,
+                  selectize = TRUE),
       
       selectInput("levels", "Level",
                   choices = c("Tutorial", "Paired"),
                   multiple = FALSE,
                   selectize = TRUE,
                   selected = "Tutorial"),
-      
-      selectInput(inputId = "playerID",
-                  label = "Player ID:",
-                  choices =  c("all", all_players),
-                  multiple = TRUE,
-                  selectize = TRUE,
-                  selected = "all"),
       
       selectInput(inputId = "tracks",
                   label = "Track:",
@@ -310,7 +202,13 @@ ui <- fluidPage(
                   selected = "None",
                   multiple = FALSE),
       
-      checkboxInput("filterPData","Remove Off Track Data",FALSE),
+      radioButtons(inputId = "data",
+                   label = "Choose Data", 
+                   choices = c("All Data", "Clean Data"),
+                   selected = "All Data",
+                   inline = TRUE),
+      
+      uiOutput("gooddriver"),
       
       
       
@@ -320,113 +218,129 @@ ui <- fluidPage(
     
     mainPanel(
       
+      #Outputs
       plotOutput(outputId = "Plot"),
-      #### Change to t_test not "Why"
-      verbatimTextOutput("why"),
-      verbatimTextOutput("why2"),
-      tableOutput("tbl1"),
-      tableOutput("blocked"),
-      h3(textOutput("caption")),
-      verbatimTextOutput("why3"),
-      verbatimTextOutput("why4")
+      verbatimTextOutput("twosamp"),
+      verbatimTextOutput("paired"),
+      verbatimTextOutput("anova"),
+      verbatimTextOutput("blocked")
       
     )
   )
 )
 
+
 #Server
 server <- function(input, output,session) {
+
   
-  plotData <- reactive({
-    if("all" %in% input$playerID)
-    {filter(data.all, GroupID %in% input$groupID, Level %in% input$levels)}
-    else{filter(data.all, GroupID %in% input$groupID, Level %in% input$levels, PlayerID %in% input$playerID)}
+  #Dynamic Input to filter only the good drivers
+  output$gooddriver <- renderUI({
     
+    if(input$data == "Clean Data"){
+      
+    checkboxInput(inputId = "gooddata", 
+                  label = "Good Driver Data",
+                  value = FALSE)
+    }
+  })
+  
+  
+  #Reactive Data for all three data types
+  plotDataAll <- reactive({
+    
+  filter(data.all, GroupID %in% input$groupID, Level %in% input$levels, Track %in% input$tracks, !(PlayerID %in% input$playerID))
   })  
   
-  plotDataR <- reactive({
-    if("all" %in% input$playerID)
-    {filter(removed.data, GroupID %in% input$groupID, Level %in% input$levels)}
-    else{filter(removed.data, GroupID %in% input$groupID, Level %in% input$levels, PlayerID %in% input$playerID)}
-    
+  plotDataClean <- reactive({
+
+    filter(data.clean, GroupID %in% input$groupID, Level %in% input$levels, Track %in% input$tracks, !(PlayerID %in% input$playerID))
   })  
   
+  plotDataGood <- reactive({
+ 
+    filter(data.good, GroupID %in% input$groupID, Level %in% input$levels, Track %in% input$tracks, !(PlayerID %in% input$playerID))
+  })
   
   
   
   # Updates PlayerID based upon GroupID
   observe({
+    
     # req() requires a selection from GroupID before any output
     # or reactivity occurs (keeps the app from crashing)
-    req(input$groupID)   
+    req(input$groupID) 
     
-    if(input$filterPData == "FALSE"){
+    #Updating remove PlayerID input based on selected data
+    
+    if(input$data == "All Data"){
       
-      
-      if ("all" %in% input$groupID) {gamedata <- data.all}
-      else{gamedata <- filter(data.all, GroupID %in% input$groupID)}
-      
-      updateSelectInput(session, 
-                        "playerID",
-                        choices = c("all", sort(unique(gamedata$PlayerID))),
-                        selected = "all")
-      
-    } else {
-      
-      if ("all" %in% input$groupID) {gamedata <- removed.data}
-      else{gamedata <- filter(removed.data, GroupID %in% input$groupID)}
+      gamedata <- filter(data.all, GroupID %in% input$groupID, Level %in% input$levels, Track %in% input$tracks)
       
       updateSelectInput(session, 
                         "playerID",
-                        choices = c("all", sort(unique(gamedata$PlayerID))),
-                        selected = "all")
+                        choices = c(sort(unique(gamedata$PlayerID))))
+                        
       
+    } else if(input$data == "Clean Data"){
       
+    gamedata <- filter(data.clean, GroupID %in% input$groupID, Level %in% input$levels, Track %in% input$tracks)
+      
+      updateSelectInput(session, 
+                        "playerID",
+                        choices = c(sort(unique(gamedata$PlayerID))))
+                   
     }
     
+    else if(input$gooddata == "TRUE"){
+      gamedata <- filter(data.good, GroupID %in% input$groupID, Level %in% input$levels, Track %in% input$tracks)
+      
+      updateSelectInput(session, 
+                        "playerID",
+                        choices = c(sort(unique(gamedata$PlayerID))))
+                  
+    }
+      
   })
   
   
   
-  # Creates Plot 
+  # Creating Vizualizations
   output$Plot <- renderPlot({
-    req(input$groupID)
+   
+     #Requiring inputs
+     req(input$data)
+     req(input$groupID)
     
-    if(input$filterPData == "TRUE"){
+     
+    #Assigning Reactive Data based on User Choice
+    if(input$data == "All Data"){
       
-      plotData <- plotDataR()
+      plotData <- plotDataAll()
       
-    } else {
+    } else if(input$data == "Clean Data") {
       
-      plotData <- plotData()
-      
-    }
+      if(input$gooddata == "TRUE"){
+        
+        plotData <- plotDataGood()
+     
+         } else{
+  
+      plotData <- plotDataClean()
+    } 
+  }
     
-    plotData <- plotData[plotData$Level %in% input$levels, ]
-    plotData <- plotData[plotData$Track %in% input$tracks, ]
-    
-    if("all" %in% input$playerID) {
-      plotData <- plotData[plotData$GroupID %in% input$groupID, ]
-    }
-    else{
-      plotData <- plotData[plotData$GroupID %in% input$groupID, ]
-      plotData <-  plotData[plotData$PlayerID %in% input$playerID, ]
-    }
-    
-    
+     #If boxplot option is selected
     if (input$bplot == "TRUE"){
       
-      
+      #ggplot with manual colors if color by option is Body, Engine, or Tire
       if(input$color %in% c("Body", "Engine", "Tire") == TRUE){
       cols <- c("Bayes" = "blue", "Gauss" = "red", "Nightingale" = "orange")
       myplot <- ggplot(data = plotData, aes_string(x = input$xvar, y = input$yvar, color=input$color)) +
         geom_boxplot() +
         geom_point(position=position_dodge(0.8)) +
-        #geom_dotplot(binaxis='y', stackdir='center', dotsize = .5, position=position_dodge(0.8)) + 
-        #stat_summary(fun.y=mean, geom="point", shape = 18,
-        #             size=3, color="red") +
         labs(x = input$xvar, y = input$yvar, title = paste("Plot of",input$yvar, "by",input$xvar, "and colored by", input$color)) +
-        theme(axis.text.x = element_text(size = 16), 
+        theme(axis.text.x = element_text(size = 16, angle = 50, hjust = 1), 
               axis.title = element_text(size = 18), 
               plot.title = element_text(size = 20, face = "bold"),
               legend.title = element_text(size = 16), 
@@ -434,16 +348,14 @@ server <- function(input, output,session) {
               axis.text.y = element_text(size = 14)) +
         scale_color_manual(values = cols)
       
+      #Using automatic colors
       } else {
         
         myplot <- ggplot(data = plotData, aes_string(x = input$xvar, y = input$yvar, color=input$color)) +
           geom_boxplot() +
           geom_point(position=position_dodge(0.8)) +
-          #geom_dotplot(binaxis='y', stackdir='center', dotsize = .5, position=position_dodge(0.8)) + 
-          #stat_summary(fun.y=mean, geom="point", shape = 18,
-          #             size=3, color="red") +
           labs(x = input$xvar, y = input$yvar, title = paste("Plot of",input$yvar, "by",input$xvar, "and colored by", input$color)) +
-          theme(axis.text.x = element_text(size = 16), 
+          theme(axis.text.x = element_text(size = 16, angle = 50, hjust = 1), 
                 axis.title = element_text(size = 18), 
                 plot.title = element_text(size = 20, face = "bold"),
                 legend.title = element_text(size = 16), 
@@ -453,35 +365,29 @@ server <- function(input, output,session) {
       
       }
       
-      
+    #If boxplot option is not selected  
     } else {
       
+      #ggplot with manual colors if color by option is Body, Engine, or Tire
       if(input$color %in% c("Body", "Engine", "Tire") == TRUE){
       cols <- c("Bayes" = "blue", "Gauss" = "red", "Nightingale" = "orange")   
       myplot <- ggplot(data = plotData, aes_string(x = input$xvar, y = input$yvar, color=input$color), plot.title = element_text(size = 18)) +
-        #geom_boxplot()+
         geom_point(position=position_dodge(0.8)) +
-        #geom_dotplot(binaxis='y', stackdir='center', dotsize = .5, position=position_dodge(0.8)) + 
-        #stat_summary(fun.y=mean, geom="point", shape = 18,
-        #             size=3, color="red") +
         labs(x = input$xvar, y = input$yvar, title = paste("Plot of",input$yvar, "by",input$xvar, "and colored by", input$color)) +
-        theme(axis.text.x = element_text(size = 16), 
+        theme(axis.text.x = element_text(size = 16, angle = 50, hjust = 1), 
               axis.title = element_text(size = 18), 
               plot.title = element_text(size = 20, face = "bold"),
               legend.title = element_text(size = 16), 
               legend.text = element_text(size = 14), 
               axis.text.y = element_text(size = 14)) +
         scale_color_manual(values = cols)
-     
+    
+      #Using automatic colors
       } else{
         myplot <- ggplot(data = plotData, aes_string(x = input$xvar, y = input$yvar, color=input$color), plot.title = element_text(size = 18)) +
-          #geom_boxplot()+
           geom_point(position=position_dodge(0.8)) +
-          #geom_dotplot(binaxis='y', stackdir='center', dotsize = .5, position=position_dodge(0.8)) + 
-          #stat_summary(fun.y=mean, geom="point", shape = 18,
-          #             size=3, color="red") +
           labs(x = input$xvar, y = input$yvar, title = paste("Plot of",input$yvar, "by",input$xvar, "and colored by", input$color)) +
-          theme(axis.text.x = element_text(size = 16), 
+          theme(axis.text.x = element_text(size = 16, angle = 50, hjust = 1), 
                 axis.title = element_text(size = 18), 
                 plot.title = element_text(size = 20, face = "bold"),
                 legend.title = element_text(size = 16), 
@@ -489,41 +395,49 @@ server <- function(input, output,session) {
                 axis.text.y = element_text(size = 14))
         
        }
-    
-      
     }
     
     
-    
-    output$why3 = renderPrint({
+    #ANOVA Output
+    output$anova = renderPrint({
       
-      if(input$filterPData == "TRUE"){
+      #Assigning Reactive Data based on User Choice
+      if(input$data == "All Data"){
         
-        plotData <- plotDataR()
+        plotData <- plotDataAll()
         
-      } else {
+      } else if(input$data == "Clean Data") {
         
-        plotData <- plotData()
-        
+        if(input$gooddata == "TRUE"){
+          
+          plotData <- plotDataGood()
+          
+        } else{
+          
+          plotData <- plotDataClean()
+        } 
       }
       
+      #Setting Up
       YVariable = plotData %>% pull(input$yvar)
       XVariable = plotData %>% pull(input$xvar)
       ColorVariable = plotData %>% pull(input$color)
       ColorVariable = drop.levels(ColorVariable)
       XVariable = drop.levels(as.factor(XVariable))
-     #YVariable = drop.levels(YVariable)
-      
+
       if(input$tests == "ANOVA") {
+        
+        #Two way ANOVA
         if(nlevels(ColorVariable) > 1){
           anovatest = anova(aov(YVariable ~ XVariable + ColorVariable + XVariable*ColorVariable))
-          
          }
        
+        #One way ANOVA
         else{
           anovatest = aov(YVariable ~ XVariable)
         }
         
+        #Making Tidy table and adding columns/rows
         check2 = tidy(anovatest)
         sum_df = sum(check2$df)
         sum_ss = sum(check2$'sumsq')
@@ -533,59 +447,61 @@ server <- function(input, output,session) {
         check2$sumsq = round(check2$sumsq, digits = 2)
         check2$meansq = round(check2$meansq, digits = 2)
         check2$statistic = round(check2$statistic, digits = 2)
-       
       
-        #   for(i in 1:(length(check2$p.value) - 2)){
-        #   if(check2$p.value[i] < 0.001){
-        #     check2$p.value[i] = "<0.001"
-        #   }
-        # 
-        #   else{
-        #     check2$p.value[i] = round(check2$p.value[i], digits = 4)
-        #   }
-        # 
-        # }
         
-        check2
+        return(check2)
       }
     })
     
-    output$why4 = renderPrint({
+    #Blocked Design
+    output$blocked = renderPrint({
       
-      if(input$filterPData == "TRUE"){
+      #Assigning Reactive Data based on User Choice
+      if(input$data == "All Data"){
         
-        plotData <- plotDataR()
+        plotData <- plotDataAll()
         
-      } else {
+      } else if(input$data == "Clean Data") {
         
-        plotData <- plotData()
-        
+        if(input$gooddata == "TRUE"){
+          
+          plotData <- plotDataGood()
+          
+        } else{
+          
+          plotData <- plotDataClean()
+        } 
       }
       
+      #Setting Up
       YVariable = plotData %>% pull(input$yvar)
       XVariable = plotData %>% pull(input$xvar)
       ColorVariable = plotData %>% pull(input$color)
-      
       ColorVariable = drop.levels(ColorVariable)
       PlayerID = plotData$PlayerID
     
         if (input$tests == "Block Design") {
         
+        #Error Message if PlayerID is selected as X-axis or Color
         if(input$xvar == "PlayerID" | input$color == "PlayerID"){
           
           "When using the Block Design, the X-axis/Color Variable cannot be PlayerID"
-        } else {
+       
+           } else {
         
-        
+        #Two Way Blocked ANOVA
         if(nlevels(ColorVariable) > 1){
           anovatest = aov(YVariable ~ PlayerID + XVariable + ColorVariable + XVariable*ColorVariable)
           
         }
         
+        #One Way Blocked
         else{
           anovatest = aov(YVariable ~ PlayerID + XVariable)
           
         }
+          
+        #Making Tidy table and adding columns/rows
         check2 = tidy(anovatest)
         options(digits = 3)
         sum_df = sum(check2$df)
@@ -596,62 +512,48 @@ server <- function(input, output,session) {
         check2$meansq = round(check2$meansq, digits = 2)
         check2$statistic = round(check2$statistic, digits = 2)
         check2 = add_row(check2,term = "Total", df = sum_df, sumsq = sum_ss)
-        ## check2[is.na(check2)] = " "
-        # for(i in 1:(length(check2$p.value) - 2)){
-        #   if(check2$p.value[i] < 0.005){
-        #     check2$p.value[i] = "<0.005"
-        #   } 
-        #   
-        #   else{
-        #     check2$p.value[i] = round(check2$p.value[i], digits = 4)
-        #   } 
-        #   
-        # }
-        
-        check2
+       
+       return(check2)
         }
       }
     })
     
-    output$why = renderPrint({
+    
+    
+   
+     #Two Sample T-Test
+     output$twosamp = renderPrint({
       
-      if(input$filterPData == "TRUE"){
+      #Assigning Reactive Data based on User Choice
+      if(input$data == "All Data"){
         
-        plotData <- plotDataR()
+        plotData <- plotDataAll()
         
-      } else {
+      } else if(input$data == "Clean Data") {
         
-        plotData <- plotData()
-        
+        if(input$gooddata == "TRUE"){
+          
+          plotData <- plotDataGood()
+          
+        } else{
+          
+          plotData <- plotDataClean()
+        } 
       }
       
+      #Setting up
       YVariable = plotData %>% pull(input$yvar)
       XVariable = plotData %>% pull(input$xvar)
       ColorVariable = plotData %>% pull(input$color)
-     
-      # # if(input$xvar == "PlayerID" & input$color == "PlayerID" & input$tests == "two-sample t test"){
-      #   
-      #    colorlevels <- droplevels(as.factor(XVariable))
-      #     
-      #    if(nlevels(XVariable) == 2){
-      #      t.test(YVariable ~ XVariable)
-      #    } else{
-      #      "t-tests are only valid with there are exactly two groups."
-      #    }
-     
-        
-        
-      # }
+      ColorVariable = drop.levels(as.factor(ColorVariable))
       
-      ColorVariable = droplevels(as.factor(ColorVariable))
-      colorlevel = nlevels(ColorVariable)
       if (input$tests == "two-sample t-test"){
         
-        
-        
+        #X-axis and Color option must be the same
         if(input$xvar == input$color) {
-          dropped = droplevels(as.factor(XVariable))
+          dropped = drop.levels(as.factor(XVariable))
           
+          #If there are two levels for the X-axis option, run the test
           if(nlevels(dropped) == 2) {
             t.test(YVariable ~ XVariable)
           }
@@ -665,84 +567,107 @@ server <- function(input, output,session) {
       }
     })
     
-    
-    
-    
-    
-    
-    
-    
-    output$why2 = renderPrint({
+  
+    #Paired T-Test
+    output$paired = renderPrint({
       
-      if(input$filterPData == "TRUE"){
+      #Assigning Reactive Data based on User Choice
+      if(input$data == "All Data"){
         
-        plotData <- plotDataR()
+        plotData <- plotDataAll()
         
-      } else {
+      } else if(input$data == "Clean Data") {
         
-        plotData <- plotData()
-        
+        if(input$gooddata == "TRUE"){
+          
+          plotData <- plotDataGood()
+          
+        } else{
+          
+          plotData <- plotDataClean()
+        } 
       }
       
+      #Setting Up
       YVariable = plotData %>% pull(input$yvar)
       XVariable = plotData %>% pull(input$xvar)
       ColorVariable = plotData %>% pull(input$color)
-      ColorVariable = droplevels(as.factor(ColorVariable))
-      colorlevel = nlevels(ColorVariable)
+      ColorVariable = drop.levels(as.factor(ColorVariable))
+
+      
       if (input$tests == "paired t-test"){
         
+        #Users need to use the Clean Data to run Paired T-Test
+        if(input$data == "Clean Data"){
+        
+        #X-axis and Color option must be the same
         if(input$xvar == input$color) {
-          dropped = droplevels(as.factor(XVariable))
+          dropped = drop.levels(as.factor(XVariable))
           
-         # if(input$levels %in% c("Tutorial", "Paired") & input$tracks %in% c("Tutorial","StraightTrack", "OvalTrack", "8Track", "ComplexTrack")) {
-            ###In the following we want Car to be input$xvar and FinishTime to be input$yvar, but it won't run then
-           # plotData = arrange(plotData, PlayerID, Order2, Car)
-            #Xvar <- as.data.frame(plotData$input$xvar)
-            #names(Xvar) <- ("Xvar")
-            #Yvar <- as.data.frame(plotData$input$yvar)
-            #names(Xvar) <- ("Yvar")
-            #pairs2 <- bind_cols(Xvar, Yvar, plotData)
-            ### If Order is odd and Order +1 is odd, then drop Order (not an even number of tests)
-           # pairs2 <- mutate(plotData, odds2 = ifelse(Order2%% 2 != 0 & lead(Order2)%% 2 != 0, 0,1))
-          #  pairs2 <- filter(pairs2, odds2 == 1)
-           # pairs2 = arrange(pairs2, Car, PlayerID, Order2)
-            
-            
+          #If there are two levels for the X-axis option, run the test
            if(nlevels(dropped) == 2) {
             t.test(FinishTime ~ Car, data = plotData, paired = TRUE)
              
            } else {
              "paired t-tests are only valid with there are exactly two groups."
-             
            }
           
-          #}
-         # else{
-            #"Paired tests can only be calculated for races completed in the Tutorial or Paired t-test game options."
-          #} 
-        }  
-        else{
+       
+        } else{
           "The X-axis and the Color variable should be the same for a t-test."
         }
-      }
-    })
+      
+        } else{
+          "Only Clean Data can be used for the paired t-test"
+        }
+        
+    }
     
+  })
     
-    myplot
+    return(myplot)
+  
+  })
+  
+  
+  #Creating a reactive object for downloading data based on users choice
+  downloadData <- reactive({
+
+    #Assigning data based on user choice
+    if(input$data == "All Data"){
+      temp <- plotDataAll()
+
+    } else if(input$data == "Clean Data") {
+      
+      if(input$gooddata == "TRUE"){
+        
+        temp <- plotDataGood()
+        
+      } else{
+        
+        temp <- plotDataClean()
+      } 
+    }
+    
+    return(temp)
     
   })
   
+  
+  #Download Data
   output$downloadData <- downloadHandler(
+    
     filename = function() {
       paste('Data-', Sys.Date(), '.csv', sep="")
     },
     content = function(con) {
-      write.csv(plotData(), con)
+      write.csv(downloadData(), con)
       
     })
   
 }
 
+#Creating Shiny App
 shinyApp(ui = ui, server = server)
 
 
