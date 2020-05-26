@@ -1,17 +1,17 @@
 #Loading Libraries
-library(shiny)
-library(readr)
-library(ggplot2)
-library(dplyr)
 library(broom)
-library(tidyr)
-library(purrr)
-library(gdata)
 library(DescTools)
+library(dplyr)
+library(gdata)
+library(ggplot2)
+library(purrr)
+library(readr)
 library(schoolmath)
+library(shiny)
 library(stringr)
+library(tidyr)
 
-  
+   
 #Importing Data
 data.all <-read.csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdata.php") 
 
@@ -671,3 +671,4 @@ server <- function(input, output,session) {
 shinyApp(ui = ui, server = server)
 
 
+ 
