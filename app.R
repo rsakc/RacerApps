@@ -7,6 +7,7 @@ library(gdata)
 library(ggplot2)
 library(readr)
 library(stringr)
+library(curl)
 
 #Importing Data
 data.all <-read_csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdata.php") 
