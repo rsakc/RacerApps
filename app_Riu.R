@@ -12,10 +12,10 @@ library(schoolmath)
 ##RACER1 DATA
 
 #Raw Data
-#data.all <-read.csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdata.php") 
+data.all <-read.csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdata.php") 
 
 #Cleaner Data
-data.all <-read.csv("Data/RacerClean.csv") 
+#data.all <-read.csv("data/RacerClean.csv") 
 
 
 #Reordering Rows if Needed
