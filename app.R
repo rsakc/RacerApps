@@ -49,38 +49,39 @@ for(i in 2:nrow(data.all)){
   }
 }
 
-## We only keept the first two clean races
-data.all <- filter(data.all, Order2 < 3)
+## We only keept the first two clean races for data.cleann
+data.clean <- data.all
+data.clean <- filter(data.clean, Order2 < 3)
 
 ## Don't keep if they only played one race
-data.all$Clean <- "Yes"
-for(i in 1:nrow(data.all)){
+data.clean$Clean <- "Yes"
+for(i in 1:nrow(data.clean)){
   
-  if(i == nrow(data.all)){
-    if(data.all$Order2[i] == 1){
-      data.all$Clean[i] <- "No"
+  if(i == nrow(data.clean)){
+    if(data.clean$Order2[i] == 1){
+      data.clean$Clean[i] <- "No"
     }
   
   }
   
-  else if(i != nrow(data.all)){
-    if(data.all$Order2[i] == 1 & data.all$Order2[i+1] == 1){
-    data.all$Clean[i] <- "No"
+  else if(i != nrow(data.clean)){
+    if(data.clean$Order2[i] == 1 & data.clean$Order2[i+1] == 1){
+    data.clean$Clean[i] <- "No"
   }
  }
 }
 
 # Don't keep if they played the same car twice
-for(i in 2:nrow(data.all)){
-  if(data.all$PlayerID[i] == data.all$PlayerID[i - 1] &
-     data.all$Car[i] == data.all$Car[i - 1]){
-    data.all$Clean[i - 1] <- "No" 
-    data.all$Clean[i] <- "No"
+for(i in 2:nrow(data.clean)){
+  if(data.clean$PlayerID[i] == data.clean$PlayerID[i - 1] &
+     data.clean$Car[i] == data.clean$Car[i - 1]){
+    data.clean$Clean[i - 1] <- "No" 
+    data.clean$Clean[i] <- "No"
   }
 }
 
 ## We need a checkbox (Use "Only Clean Data)
-data.clean <-  filter(data.all, Clean == "Yes")
+data.clean <-  filter(data.clean, Clean == "Yes")
 
 ## ONLY if the data is clean, we can then filter to eliminate BadDrivers
 ## If the "Only Clean Data" is checked, then we can also checkbox "Only Good Drivers"
@@ -207,6 +208,7 @@ ui <- fluidPage(
                        multiple = FALSE),
            
            checkboxInput('bplot',"Add boxplot",FALSE),
+           checkboxInput("summary", "Show Summary Statistics", FALSE),
            
            radioButtons(inputId = "data",
                         label = "Choose Data", 
@@ -215,7 +217,19 @@ ui <- fluidPage(
                         inline = TRUE),
            uiOutput("gooddriver"),
            
-           downloadButton('downloadData', label = "Racer Data")
+           downloadButton('downloadData', label = "Racer Data"),
+           
+           
+           a(h5("Tutorial Video"),
+             href="https://www.youtube.com/watch?v=JZDQVHVNC10", 
+             align="left"),
+           
+           a(h5("Instructor Details"),
+             href="https://stat2labs.sites.grinnell.edu/racer.html", 
+             align="left")
+           
+           
+           
            
     ),
     column(8,
@@ -225,7 +239,10 @@ ui <- fluidPage(
            verbatimTextOutput("twosamp"),
            verbatimTextOutput("paired"),
            verbatimTextOutput("anova"),
-           verbatimTextOutput("blocked")
+           verbatimTextOutput("blocked"),
+           tableOutput("summarytable"),
+           uiOutput("summarytext")
+           
     ))
   
   
@@ -563,6 +580,43 @@ server <- function(input, output,session) {
         
       }
       
+    })
+    
+    #Summary Table Output
+    output$summarytable <- renderTable({
+      
+      #Using reactive data
+      plotData <- plotDataR()
+      
+      if(input$summary == "TRUE"){
+        
+        #If there is data
+        if(nrow(plotData) != 0){
+        
+        #Creating summary table
+        stable <- plotData %>% select(input$xvar, input$yvar) %>% 
+          rename(`X Variable` = input$xvar, Yvar = input$yvar) %>%
+          group_by(`X Variable`) %>%
+          summarize(N = n(), Mean = mean(Yvar), SD = sd(Yvar))
+        
+        #Removing dynamic help text
+        output$summarytext <- renderUI({""})
+        
+        #If there is no data
+        } else{
+        
+        #Empty data frame to return  
+        stable <- data.frame()
+        
+        #Help Text
+        output$summarytext <- renderUI(HTML(paste(
+          em("There is no data"))))
+        }
+        
+        return(stable)
+
+      }
+    
     })
     
     return(myplot)
