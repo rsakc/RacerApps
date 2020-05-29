@@ -9,7 +9,7 @@ library(readr)
 library(stringr)
 
 #Importing Data
-data.all <-read.csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdata.php") 
+data.all <-read_csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdata.php") 
 
 #Filtering Data
 data.all <- filter(data.all, FinishTime < 100)
@@ -221,11 +221,12 @@ ui <- fluidPage(
            
            
            a(h5("Tutorial Video"),
-             href="https://www.youtube.com/watch?v=JZDQVHVNC10", 
+             href="https://www.youtube.com/watch?v=JZDQVHVNC10",
+             aligh= "left", target="_blank"),
            
            a(h5("Instructor Details"),
              href="https://stat2labs.sites.grinnell.edu/racer.html", 
-             align="left")
+             align="left", target = "_blank")
            
            
            
@@ -617,16 +618,6 @@ server <- function(input, output,session) {
       }
     
     })
-    
-    #Making sure help text goes away if checkbox is unchecked
-    observeEvent(input$summary, {
-      
-      if(input$summary == "FALSE"){
-        output$summarytext <- renderUI({""})
-      }
-    })
-    
-    
     
     return(myplot)
   })
