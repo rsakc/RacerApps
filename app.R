@@ -9,7 +9,7 @@ library(readr)
 library(stringr)
 
 #Importing Data
-data.all <-read_csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdata.php") 
+data.all <-read.csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdata.php") 
 
 #Filtering Data
 data.all <- filter(data.all, Body == "Bayes" | Body == "Nightingale" | Body == "Gauss")
@@ -48,7 +48,7 @@ for(i in 2:nrow(data.all)){
   }
 }
 
-## We only keept the first two clean races for data.cleann
+## We only kept the first two clean races for data.clean
 data.clean <- data.all
 data.clean <- filter(data.clean, Order2 < 3)
 
@@ -80,7 +80,7 @@ for(i in 2:nrow(data.clean)){
 }
 
 ## We need a checkbox (Use "Only Clean Data)
-data.clean <-  filter(data.clean, Clean == "Yes")
+data.clean <- filter(data.clean, Clean == "Yes")
 
 ## ONLY if the data is clean, we can then filter to eliminate BadDrivers
 ## If the "Only Clean Data" is checked, then we can also checkbox "Only Good Drivers"
@@ -219,9 +219,9 @@ ui <- fluidPage(
            downloadButton('downloadData', label = "Racer Data"),
            
            
-           a(h5("Tutorial Video"),
-             href="https://www.youtube.com/watch?v=JZDQVHVNC10",
-             aligh= "left", target="_blank"),
+           # a(h5("Tutorial Video"),
+           #   href="https://www.youtube.com/watch?v=JZDQVHVNC10",
+           #   aligh= "left", target="_blank"),
            
            a(h5("Instructor Details"),
              href="https://stat2labs.sites.grinnell.edu/racer.html", 
@@ -347,7 +347,7 @@ server <- function(input, output,session) {
         cols <- c("Bayes" = "blue", "Gauss" = "red", "Nightingale" = "orange")
         myplot <- ggplot(data = plotData, aes_string(x = input$xvar, y = input$yvar, color=input$color)) +
           geom_boxplot() +
-          geom_point(position=position_dodge(0.8), size = 3) +
+          geom_point(position=position_dodge(width = 0.75), size = 3) +
           labs(x = input$xvar, y = input$yvar, title = paste("Plot of",input$yvar, "by",input$xvar, "and colored by", input$color)) +
           theme_bw() +
           theme(axis.text.x = element_text(size = 18, angle = 50, hjust = 1), 
@@ -363,7 +363,7 @@ server <- function(input, output,session) {
         
         myplot <- ggplot(data = plotData, aes_string(x = input$xvar, y = input$yvar, color=input$color)) +
           geom_boxplot() +
-          geom_point(position=position_dodge(0.8), size = 3) +
+          geom_point(position=position_dodge(width = 0.75), size = 3) +
           labs(x = input$xvar, y = input$yvar, title = paste("Plot of",input$yvar, "by",input$xvar, "and colored by", input$color)) +
           theme_bw() +
           theme(axis.text.x = element_text(size = 18, angle = 50, hjust = 1), 
@@ -383,7 +383,7 @@ server <- function(input, output,session) {
       if(input$color %in% c("Body", "Engine", "Tire") == TRUE){
         cols <- c("Bayes" = "blue", "Gauss" = "red", "Nightingale" = "orange")   
         myplot <- ggplot(data = plotData, aes_string(x = input$xvar, y = input$yvar, color=input$color), plot.title = element_text(size = 18)) +
-          geom_point(position=position_dodge(0.8), size = 3) +
+          geom_point(position= position_dodge(width = 0.1), size = 3) +
           labs(x = input$xvar, y = input$yvar, title = paste("Plot of",input$yvar, "by",input$xvar, "and colored by", input$color)) +
           theme_bw() +
           theme(axis.text.x = element_text(size = 18, angle = 50, hjust = 1), 
@@ -397,7 +397,7 @@ server <- function(input, output,session) {
         #Using automatic colors
       } else{
         myplot <- ggplot(data = plotData, aes_string(x = input$xvar, y = input$yvar, color=input$color), plot.title = element_text(size = 18)) +
-          geom_point(position=position_dodge(0.8), size = 3) +
+          geom_point(position =position_dodge(width = 0.1), size = 3) +
           labs(x = input$xvar, y = input$yvar, title = paste("Plot of",input$yvar, "by",input$xvar, "and colored by", input$color)) +
           theme_bw() +
           theme(axis.text.x = element_text(size = 18, angle = 50, hjust = 1), 
@@ -618,8 +618,17 @@ server <- function(input, output,session) {
     
     })
     
+    #Making sure help text goes away if checkbox is unchecked
+    observeEvent(input$summary, {
+     
+       if(input$summary == "FALSE"){
+        output$summarytext <- renderUI({""})
+      }
+    })
+  
     return(myplot)
-  })
+ 
+     })
   
   #Download Data
   output$downloadData <- downloadHandler(
