@@ -12,7 +12,6 @@ library(stringr)
 data.all <-read.csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdata.php") 
 
 #Filtering Data
-data.all <- filter(data.all, FinishTime < 100)
 data.all <- filter(data.all, Body == "Bayes" | Body == "Nightingale" | Body == "Gauss")
 data.all <- filter(data.all, Level == "Tutorial" | Level == "Paired")
 data.all <- filter(data.all, Track == "Tutorial" | Track == "StraightTrack" | Track == "OvalTrack" | Track == "8Track" | Track == "ComplexTrack" )
@@ -178,14 +177,14 @@ ui <- fluidPage(
                        selected = "Tutorial"),
            
            selectInput(inputId = "xvar",
-                       label = "X Axis:",
+                       label = "X Variable:",
                        #columns of the dataset
                        choices = c("Body", "Engine", "Tire", "Track", "Order2", "PlayerID"),
                        selected = "Body",
                        multiple = FALSE),
            
            selectInput(inputId = "yvar",
-                       label = "Y Axis:",
+                       label = "Y Variable:",
                        #columns of the dataset
                        choices = c("FinishTime", "TopSpeedReached", "TimeTo30", "TimeTo60"),
                        selected = "FinishTime",
@@ -202,7 +201,7 @@ ui <- fluidPage(
                        multiple = FALSE),
            
            selectInput(inputId = "tests",
-                       label = "Statistic Tests",
+                       label = HTML("Statistical Test <br/> (for X Variable)"),
                        choices = c("None", "two-sample t-test", "paired t-test", "ANOVA", "Block Design"),
                        selected = "None",
                        multiple = FALSE),
