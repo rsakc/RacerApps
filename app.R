@@ -222,7 +222,6 @@ ui <- fluidPage(
            
            a(h5("Tutorial Video"),
              href="https://www.youtube.com/watch?v=JZDQVHVNC10", 
-             align="left"),
            
            a(h5("Instructor Details"),
              href="https://stat2labs.sites.grinnell.edu/racer.html", 
