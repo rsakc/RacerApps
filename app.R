@@ -9,7 +9,7 @@ library(readr)
 library(stringr)
 
 #Importing Data
-data.all <-read_csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdata.php") 
+data.all <-read.csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdata.php") 
 
 #Filtering Data
 data.all <- filter(data.all, FinishTime < 100)
@@ -617,6 +617,16 @@ server <- function(input, output,session) {
       }
     
     })
+    
+    #Making sure help text goes away if checkbox is unchecked
+    observeEvent(input$summary, {
+      
+      if(input$summary == "FALSE"){
+        output$summarytext <- renderUI({""})
+      }
+    })
+    
+    
     
     return(myplot)
   })
