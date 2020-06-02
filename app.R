@@ -13,7 +13,7 @@ data.all <-read.csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdat
 
 #Filtering Data
 data.all <- filter(data.all, Body == "Bayes" | Body == "Nightingale" | Body == "Gauss")
-data.all <- filter(data.all, Level == "Tutorial" | Level == "Paired")
+data.all <- filter(data.all, Level == "Tutorial" | Level == "Paired" | Level == "ChooseCar")
 data.all <- filter(data.all, Track == "Tutorial" | Track == "StraightTrack" | Track == "OvalTrack" | Track == "8Track" | Track == "ComplexTrack" )
 data.all <- drop.levels(data.all)
 
@@ -164,7 +164,7 @@ ui <- fluidPage(
                        selectize = TRUE),
            
            selectInput("levels", "Level",
-                       choices = c("Tutorial", "Paired"),
+                       choices = c("Tutorial", "Paired", "ChooseCar"),
                        multiple = FALSE,
                        selectize = TRUE,
                        selected = "Tutorial"),
