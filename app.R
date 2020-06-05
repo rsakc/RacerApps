@@ -6,9 +6,10 @@ library(dplyr)
 library(gdata)
 library(ggplot2)
 library(stringr)
+library(curl)
  
 #Importing Data
-data.all <-read.csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdata.php") 
+data.all <-read_csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdata.php") 
 
 #Filtering Data
 data.all <- filter(data.all, Body == "Bayes" | Body == "Nightingale" | Body == "Gauss")
