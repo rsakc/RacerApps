@@ -6,6 +6,7 @@ library(dplyr)
 library(gdata)
 library(ggplot2)
 library(stringr)
+library(readr)
 library(curl)
  
 #Importing Data
