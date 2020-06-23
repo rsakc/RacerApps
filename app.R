@@ -563,7 +563,7 @@ server <- function(input, output,session) {
             
             #If there are two levels for the X-axis option, run the test
             if(nlevels(dropped) == 2) {
-              t.test(FinishTime ~ Car, data = plotData, paired = TRUE)
+              t.test(YVariable ~ XVariable, data = plotData, paired = TRUE)
               
             } else {
               "paired t-tests are only valid with there are exactly two groups."
