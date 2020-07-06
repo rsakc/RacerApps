@@ -10,7 +10,15 @@ library(readr)
 library(curl)
    
 #Importing Data
-data.all <- readr::read_csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdata.php") 
+n <- sample(c(0,1), size = 1)
+
+if(n == 0){
+  data.all <- readr::read_csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdata.php")
+
+} else {
+  data.all <- readr::read_csv("https://www.stat2games.sites.grinnell.edu/data/racer/getdata.php") 
+}
+
 
 #Filtering Data
 data.all <- filter(data.all, Body == "Bayes" | Body == "Nightingale" | Body == "Gauss")
@@ -226,7 +234,10 @@ ui <- fluidPage(
            
            a(h5("Instructor Details"),
              href="https://stat2labs.sites.grinnell.edu/racer.html", 
-             align="left", target = "_blank")
+             align="left", target = "_blank"),
+           
+           actionButton(inputId = "refresh",
+                        label = "Refresh App")
            
            
            
@@ -630,6 +641,14 @@ server <- function(input, output,session) {
     return(myplot)
  
      })
+  
+  
+  #Refresh Shiny App
+  observeEvent(input$refresh, {
+    session$reload()
+  })
+  
+  
   
   #Download Data
   output$downloadData <- downloadHandler(
