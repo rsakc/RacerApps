@@ -1,3 +1,5 @@
+#Last Updated on July 8 2020
+
 #Loading Libraries
 library(shiny)
 library(shinythemes)
@@ -234,30 +236,31 @@ ui <- fluidPage(
            
            a(h5("Instructor Details"),
              href="https://stat2labs.sites.grinnell.edu/racer.html", 
-             align="left", target = "_blank"),
-           
-           actionButton(inputId = "refresh",
-                        label = "Refresh App")
-           
-           
+             align="left", target = "_blank")
            
            
     ),
     column(8,
            
            #Outputs
-           plotOutput(outputId = "Plot"),
-           verbatimTextOutput("twosamp"),
-           verbatimTextOutput("paired"),
-           verbatimTextOutput("anova"),
-           verbatimTextOutput("blocked"),
-           tableOutput("summarytable"),
-           uiOutput("summarytext")
+           tabsetPanel(
+             tabPanel("General",  plotOutput(outputId = "Plot"),
+                      verbatimTextOutput("twosamp"), 
+                      verbatimTextOutput("paired"),
+                      verbatimTextOutput("anova"),
+                      verbatimTextOutput("blocked"),
+                      tableOutput("summarytable"),
+                      uiOutput("summarytext")),
+             
+             tabPanel("Residuals", uiOutput("residualtext"),
+                      fluidRow(
+               splitLayout(cellWidths = c("50%", "50%"), plotOutput("rplot1"), plotOutput("rplot2"))))
+             
            
     ))
   
   
-)
+))
 
 
 
@@ -529,7 +532,7 @@ server <- function(input, output,session) {
       ColorVariable = plotData %>% pull(input$color)
       ColorVariable = drop.levels(as.factor(ColorVariable))
       
-      if (input$tests == "two-sample t-test"){
+      if(input$tests == "two-sample t-test"){
         
         #X-axis and Color option must be the same
         if(input$xvar == input$color) {
@@ -563,7 +566,7 @@ server <- function(input, output,session) {
       ColorVariable = drop.levels(as.factor(ColorVariable))
       
       
-      if (input$tests == "paired t-test"){
+      if(input$tests == "paired t-test"){
         
         #Users need to use the Clean Data to run Paired T-Test
         if(input$data == "Clean Data"){
@@ -637,17 +640,286 @@ server <- function(input, output,session) {
         output$summarytext <- renderUI({""})
       }
     })
+    
+   
+    #Residual Histogram (RPLOT 1)
+    output$rplot1 <- renderPlot({
+      
+      #Using reactive data
+      plotData <- plotDataR()
+      
+      #Test is Not None
+      if(input$tests != "None"){
+      
+      #Setting up
+      YVariable = plotData %>% pull(input$yvar)
+      XVariable = plotData %>% pull(input$xvar)
+      XVariable = drop.levels(as.factor(XVariable))
+      ColorVariable = plotData %>% pull(input$color)
+      ColorVariable = drop.levels(as.factor(ColorVariable))
+      PlayerID = plotData$PlayerID
+    
   
+      ##Two sample t-test
+      if(input$tests == "two-sample t-test"){
+        
+        #X-axis and Color option must be the same
+        if(input$xvar == input$color) {
+          dropped = drop.levels(as.factor(XVariable))
+          
+          #If there are two levels for the X-axis option, run the test
+          if(nlevels(dropped) == 2) {
+            model <- lm(YVariable ~ XVariable)
+            
+            #Remove Message
+            output$residualtext <- renderUI({""})
+            
+            #Creating plot
+            plot <- hist(model$residuals, main = "Histogram of Residuals",
+                         xlab = "Residuals",
+                         ylab = "Count")
+            
+            return(plot)
+        
+            
+          } else {
+            output$residualtext <- renderUI(HTML(paste(
+              em("A valid statistical test must be in place for the residual plots to be generated."))))
+          }
+          
+        } else{
+          output$residualtext <- renderUI(HTML(paste(
+            em("A valid statistical test must be in place for the residual plots to be generated."))))
+        }
+          
+        
+      
+        
+    ##Paired T-Test
+    } else if(input$tests == "paired t-test"){
+      
+        #Users need to use the Clean Data to run Paired T-Test
+        if(input$data == "Clean Data"){
+          
+          #X-axis and Color option must be the same
+          if(input$xvar == input$color) {
+            dropped = drop.levels(as.factor(XVariable))
+            
+            #If there are two levels for the X-axis option, run the test
+            if(nlevels(dropped) == 2) {
+              model <- lm(YVariable ~ XVariable)
+              
+              #Remove Message
+              output$residualtext <- renderUI({""})
+              
+              #Creating plot
+              plot <- hist(model$residuals, main = "Histogram of Residuals",
+                           xlab = "Residuals",
+                           ylab = "Count")
+              
+              return(plot)
+              
+            } else{
+              output$residualtext <- renderUI(HTML(paste(
+                em("A valid statistical test must be in place for the residual plots to be generated."))))
+            }
+             
+          } else{
+            output$residualtext <- renderUI(HTML(paste(
+              em("A valid statistical test must be in place for the residual plots to be generated."))))
+          }
+          
+        } else{
+          output$residualtext <- renderUI(HTML(paste(
+            em("A valid statistical test must be in place for the residual plots to be generated."))))
+        }
+             
+            
+      
+    ##ANOVA
+      } else if(input$tests == "ANOVA") {
+        
+        #Two way ANOVA
+        if(nlevels(ColorVariable) > 1){
+          model <- aov(YVariable ~ XVariable + ColorVariable + XVariable*ColorVariable)
+        }
+        
+        #One way ANOVA
+        else{
+          model <- aov(YVariable ~ XVariable)
+        }
+        
+        #Remove Message
+        output$residualtext <- renderUI({""})
+        
+        #Creating plot
+        plot <- hist(model$residuals, main = "Histogram of Residuals",
+                     xlab = "Residuals",
+                     ylab = "Count")
+        
+        return(plot)
+        
+        
+    ##Block Design
+      } else if (input$tests == "Block Design") {
+        
+        #Error Message if PlayerID is selected as X-axis or Color
+        if(input$xvar == "PlayerID" | input$color == "PlayerID"){
+          
+          output$residualtext <- renderUI(HTML(paste(
+            em("A valid statistical test must be in place for the residual plots to be generated."))))
+        
+        
+        } else {
+          
+          #Two Way Blocked ANOVA
+          if(nlevels(ColorVariable) > 1){
+            model <-  aov(YVariable ~ PlayerID + XVariable + ColorVariable + XVariable*ColorVariable)
+          
+          #One Way Blocked
+          } else{
+            model <-  aov(YVariable ~ PlayerID + XVariable)
+          }
+          
+          #Remove Message
+          output$residualtext <- renderUI({""})
+          
+          #Creating plot
+          plot <- hist(model$residuals, main = "Histogram of Residuals",
+                       xlab = "Residuals",
+                       ylab = "Count")
+          
+          return(plot)
+      
+        }
+      }
+      
+      #Test option is none
+      } else{
+        output$residualtext <- renderUI(HTML(paste(
+          em("A valid statistical test must be in place for the residual plots to be generated."))))
+    }
+        
+    })
+    
+    
+    #Normal QQ Plot (RPLOT 2)
+    output$rplot2 <- renderPlot({
+      
+      #Using reactive data
+      plotData <- plotDataR()
+      
+      #Test is Not None
+      if(input$tests != "None"){
+      
+      #Setting up
+      YVariable = plotData %>% pull(input$yvar)
+      XVariable = plotData %>% pull(input$xvar)
+      XVariable = drop.levels(as.factor(XVariable))
+      ColorVariable = plotData %>% pull(input$color)
+      ColorVariable = drop.levels(as.factor(ColorVariable))
+      PlayerID = plotData$PlayerID
+      
+      
+      ##Two sample t-test
+      if(input$tests == "two-sample t-test"){
+        
+        #X-axis and Color option must be the same
+        if(input$xvar == input$color) {
+          dropped = drop.levels(as.factor(XVariable))
+          
+          #If there are two levels for the X-axis option, run the test
+          if(nlevels(dropped) == 2) {
+            model <- lm(YVariable ~ XVariable)
+            
+            #Creating plot
+            plot <- qqnorm(model$residuals) 
+            plot <- qqline(model$residuals)
+            
+            return(plot)
+            
+          }
+        }
+        
+        ##Paired T-Test
+      } else if(input$tests == "paired t-test"){
+        
+        #Users need to use the Clean Data to run Paired T-Test
+        if(input$data == "Clean Data"){
+          
+          #X-axis and Color option must be the same
+          if(input$xvar == input$color) {
+            dropped = drop.levels(as.factor(XVariable))
+            
+            #If there are two levels for the X-axis option, run the test
+            if(nlevels(dropped) == 2) {
+              model <- lm(YVariable ~ XVariable)
+              
+              #Creating plot
+              plot <- qqnorm(model$residuals) 
+              plot <- qqline(model$residuals)
+              
+              return(plot)
+            } 
+          } 
+        } 
+        
+        ##ANOVA
+      } else if(input$tests == "ANOVA") {
+        
+        #Two way ANOVA
+        if(nlevels(ColorVariable) > 1){
+          model <- aov(YVariable ~ XVariable + ColorVariable + XVariable*ColorVariable)
+        }
+        
+        #One way ANOVA
+        else{
+          model <-  aov(YVariable ~ XVariable)
+        }
+        
+        #Creating plot
+        plot <- qqnorm(model$residuals) 
+        plot <- qqline(model$residuals)
+        
+        return(plot)
+        
+        
+        ##Block Design
+      } else if (input$tests == "Block Design") {
+        
+        #Error Message if PlayerID is selected as X-axis or Color
+        if(input$xvar == "PlayerID" | input$color == "PlayerID"){
+          
+        } else {
+          
+          #Two Way Blocked ANOVA
+          if(nlevels(ColorVariable) > 1){
+            model <-  aov(YVariable ~ PlayerID + XVariable + ColorVariable + XVariable*ColorVariable)
+            
+            #One Way Blocked
+          } else{
+            model <-  aov(YVariable ~ PlayerID + XVariable)
+          }
+          
+          #Creating plot
+          plot <- qqnorm(model$residuals) 
+          plot <- qqline(model$residuals)
+          
+          return(plot)
+        }
+      }
+      
+      #Test option is none
+      } else{
+        output$residualtext <- renderUI(HTML(paste(
+          em("A valid statistical test must be in place for the residual plots to be generated."))))
+      }
+      
+    })
+    
     return(myplot)
  
      })
-  
-  
-  #Refresh Shiny App
-  observeEvent(input$refresh, {
-    session$reload()
-  })
-  
   
   
   #Download Data
@@ -660,7 +932,8 @@ server <- function(input, output,session) {
       write.csv(plotDataR(), con)
     })
   
-}
+  
+} #Closes Server
 
 #Creating Shiny App
 shinyApp(ui = ui, server = server)
