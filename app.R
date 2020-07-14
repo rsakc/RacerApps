@@ -1,4 +1,4 @@
-#Last Updated on July 13 2020
+#Last Updated on July 14 2020
 
 #Loading Libraries
 library(shiny)
@@ -33,6 +33,11 @@ data.all <- drop.levels(data.all)
 data.all <- data.all %>% mutate(Date = str_sub(GameDate, 1, 10))
 data.all$Date <- as.Date(data.all$Date, format = "%m/%d/%Y")
 data.all <- data.all %>% filter(Date >= as.Date("02/01/2020", format = "%m/%d/%Y"))
+
+#To Lower
+data.all$PlayerID <- tolower(data.all$PlayerID)
+data.all$GroupID <- tolower(data.all$GroupID)
+
 
 #Making GroupID and PlayerID a character vector
 data.all$GroupID <- as.character(data.all$GroupID)
