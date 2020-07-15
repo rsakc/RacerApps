@@ -1,4 +1,4 @@
-#Last Updated on July 14 2020
+#Last Updated on July 15 2020
 
 #Loading Libraries
 library(shiny)
@@ -10,7 +10,8 @@ library(ggplot2)
 library(stringr)
 library(readr)
 library(curl)
-    
+library(tidyr)
+     
 #Importing Data
 n <- sample(c(0,1), size = 1)
 
@@ -68,6 +69,8 @@ for(i in 2:nrow(data.all)){
 data.clean <- data.all
 data.clean <- filter(data.clean, Order2 < 3)
 
+
+##FIRST ITERATION 
 ## Don't keep if they only played one race
 data.clean$Clean <- "Yes"
 for(i in 1:nrow(data.clean)){
@@ -86,6 +89,9 @@ for(i in 1:nrow(data.clean)){
  }
 }
 
+## First Filter for Clean Data
+data.clean <- filter(data.clean, Clean == "Yes")
+
 # Don't keep if they played the same car twice
 for(i in 2:nrow(data.clean)){
   if(data.clean$PlayerID[i] == data.clean$PlayerID[i - 1] &
@@ -95,8 +101,45 @@ for(i in 2:nrow(data.clean)){
   }
 }
 
-## We need a checkbox (Use "Only Clean Data)
+## Second Filter for Clean Data
 data.clean <- filter(data.clean, Clean == "Yes")
+
+
+#SECOND ITERATION
+
+## Don't keep if they only played one race
+data.clean$Clean <- "Yes"
+for(i in 1:nrow(data.clean)){
+  
+  if(i == nrow(data.clean)){
+    if(data.clean$Order2[i] == 1){
+      data.clean$Clean[i] <- "No"
+    }
+    
+  }
+  
+  else if(i != nrow(data.clean)){
+    if(data.clean$Order2[i] == 1 & data.clean$Order2[i+1] == 1){
+      data.clean$Clean[i] <- "No"
+    }
+  }
+}
+
+## First Filter for Clean Data
+data.clean <- filter(data.clean, Clean == "Yes")
+
+# Don't keep if they played the same car twice
+for(i in 2:nrow(data.clean)){
+  if(data.clean$PlayerID[i] == data.clean$PlayerID[i - 1] &
+     data.clean$Car[i] == data.clean$Car[i - 1]){
+    data.clean$Clean[i - 1] <- "No" 
+    data.clean$Clean[i] <- "No"
+  }
+}
+
+## Second Filter for Clean Data
+data.clean <- filter(data.clean, Clean == "Yes")
+
 
 ## ONLY if the data is clean, we can then filter to eliminate BadDrivers
 ## If the "Only Clean Data" is checked, then we can also checkbox "Only Good Drivers"
@@ -218,7 +261,8 @@ ui <- fluidPage(
            
            selectInput(inputId = "tests",
                        label = HTML("Statistical Test <br/> (for X Variable)"),
-                       choices = c("None", "two-sample t-test", "paired t-test", "ANOVA", "Block Design"),
+                       choices = c("None", "two-sample t-test", "paired t-test", "ANOVA", "Block Design", 
+                                   "Two Sample Randomization Test", "Paired Randomization Test"),
                        selected = "None",
                        multiple = FALSE),
            
@@ -255,6 +299,8 @@ ui <- fluidPage(
                       verbatimTextOutput("anova"),
                       verbatimTextOutput("blocked"),
                       tableOutput("summarytable"),
+                      verbatimTextOutput("twor"),
+                      verbatimTextOutput("pr"),
                       uiOutput("summarytext")),
              
              tabPanel("Residuals", uiOutput("residualtext"),
@@ -487,10 +533,10 @@ server <- function(input, output,session) {
       
       if (input$tests == "Block Design") {
         
-        #Error Message if PlayerID is selected as X-axis or Color
+        #Error Message if PlayerID is selected as X Variable or Color
         if(input$xvar == "PlayerID" | input$color == "PlayerID"){
           
-          "When using the Block Design, the X-axis/Color Variable cannot be PlayerID"
+          "When using the Block Design, the X-Variabe/Color Variable cannot be PlayerID"
           
         } else {
           
@@ -539,20 +585,20 @@ server <- function(input, output,session) {
       
       if(input$tests == "two-sample t-test"){
         
-        #X-axis and Color option must be the same
+        #X-variable and Color option must be the same
         if(input$xvar == input$color) {
           dropped = drop.levels(as.factor(XVariable))
           
-          #If there are two levels for the X-axis option, run the test
+          #If there are two levels for the X-variable option, run the test
           if(nlevels(dropped) == 2) {
             t.test(YVariable ~ XVariable)
           }
           else{
-            "t-tests are only valid with there are exactly two groups."
+            "t-tests are only valid when there are exactly two groups."
           }
         }  
         else{
-          "The X-axis and the Color variable should be the same for a t-test."
+          "The X variable and the Color variable should be the same for a t-test."
         }
       }
     })
@@ -576,21 +622,21 @@ server <- function(input, output,session) {
         #Users need to use the Clean Data to run Paired T-Test
         if(input$data == "Clean Data"){
           
-          #X-axis and Color option must be the same
+          #X-variable and Color option must be the same
           if(input$xvar == input$color) {
             dropped = drop.levels(as.factor(XVariable))
             
-            #If there are two levels for the X-axis option, run the test
+            #If there are two levels for the X-variable option, run the test
             if(nlevels(dropped) == 2) {
               t.test(YVariable ~ XVariable, data = plotData, paired = TRUE)
               
             } else {
-              "paired t-tests are only valid with there are exactly two groups."
+              "paired t-tests are only valid when there are exactly two groups."
             }
             
             
           } else{
-            "The X-axis and the Color variable should be the same for a t-test."
+            "The X variable and the Color variable should be the same for a t-test."
           }
           
         } else{
@@ -600,6 +646,167 @@ server <- function(input, output,session) {
       }
       
     })
+    
+    
+    #Two Sample Randomization Test
+    output$twor <- renderPrint({
+      
+      #Reactive Data
+      plotData <- plotDataR()
+      
+      #Setting up
+      YVariable = plotData %>% pull(input$yvar)
+      XVariable = plotData %>% pull(input$xvar)
+      ColorVariable = plotData %>% pull(input$color)
+      ColorVariable = drop.levels(as.factor(ColorVariable))
+      
+      
+      if(input$tests == "Two Sample Randomization Test"){
+      
+        #X variable and Color option must be the same
+        if(input$xvar == input$color) {
+          dropped = drop.levels(as.factor(XVariable))
+          
+          #If there are two levels for the X variable option, run the test
+          if(nlevels(dropped) == 2) {
+            
+            #Small Data Frame
+            data <- data.frame(XVariable, YVariable)
+
+            #Identifying the Two Groups and creating necessary vectors
+            groups <- sort(unique(data$XVariable))
+            group1 <- groups[1]
+            group2 <- groups[2]
+
+            data1 <- data %>% filter(XVariable == group1)
+            data2 <- data %>% filter(XVariable == group2)
+
+            group1vec <- data1$YVariable
+            group2vec <- data2$YVariable
+ 
+
+            #Running the Two Sample Randomization Test
+
+             #Setting up
+              meandiff <- mean(group1vec) - mean(group2vec)
+              R <- 100000
+              results <- numeric()
+              
+            for(i in 1:R){
+                samp <- sample(data$YVariable, size = length(data$YVariable), replace = FALSE)
+                
+                samp1 <- samp[1:length(group1vec)]
+                samp2 <- samp[(length(group1vec) + 1):length(samp)]
+                
+                results[i] <- mean(samp1) - mean(samp2)
+            }
+         
+             pvalue <- (1 + sum(results >= abs(meandiff)) + sum(results <= -abs(meandiff))) / (R+1)
+            
+             return(paste("P Value:", round(pvalue,4)))
+            
+          } else {
+            "Two sample randomization tests are only valid when there are exactly two groups."
+          }
+      
+        } else{
+          "The X variable and the Color variable should be the same for a t-test."
+        }
+      }
+    
+    })
+    
+    
+    #Paired Randomization Test
+    
+    output$pr <- renderPrint({
+      
+      #Using Reactive Data
+      plotData <- plotDataR()
+      
+      #Setting Up
+      YVariable = plotData %>% pull(input$yvar)
+      XVariable = plotData %>% pull(input$xvar)
+      ColorVariable = plotData %>% pull(input$color)
+      ColorVariable = drop.levels(as.factor(ColorVariable))
+      
+      
+      if(input$tests == "Paired Randomization Test"){
+        
+        #Users need to use the Clean Data to run Paired Randomization Test
+        if(input$data == "Clean Data"){
+          
+          #X variable and Color option must be the same
+          if(input$xvar == input$color) {
+            dropped = drop.levels(as.factor(XVariable))
+            
+            #If there are two levels for the X-variable option, run the test
+            if(nlevels(dropped) == 2) {
+             
+              #Small Data Frame
+              data <- data.frame(XVariable, YVariable)
+              
+              #Identifying the Two Groups and creating necessary vectors
+              groups <- sort(unique(data$XVariable))
+              group1 <- groups[1]
+              group2 <- groups[2]
+              
+              data1 <- data %>% filter(XVariable == group1)
+              data2 <- data %>% filter(XVariable == group2)
+              
+              group1vec <- data1$YVariable
+              group2vec <- data2$YVariable
+              
+              
+              #Running the Paired Randomization Test
+              
+              #Differences Vector
+              diffvec <- group1vec - group2vec
+              
+              #Setting up
+              meandiff <- mean(diffvec)
+              R <- 100000
+              results <- numeric()
+            
+              #Adjusting Data to be Under Null
+              diffvecadj <- diffvec - mean(diffvec)
+              
+              for(i in 1:R){
+                samp <- sample(diffvecadj, size = length(diffvecadj), replace = TRUE)
+                results[i] <- mean(samp)
+                
+              }
+              
+              pvalue <- (1 + sum(results >= abs(meandiff)) + sum(results <= -abs(meandiff))) / (R+1)
+              
+              return(paste("P Value:", round(pvalue,4)))
+              
+              
+            } else {
+              "Paired Randomization Tests are only valid when there are exactly two groups."
+            }
+            
+            
+          } else{
+            "The X variable and the Color variable should be the same for the Paired Randomization Test."
+          }
+          
+        } else{
+          "Only Clean Data can be used for the Paired Randomization Test"
+        }
+        
+      }
+
+      
+    })
+    
+    
+    
+    
+    
+    
+    
+    
     
     #Summary Table Output
     output$summarytable <- renderTable({
@@ -668,11 +875,11 @@ server <- function(input, output,session) {
       ##Two sample t-test
       if(input$tests == "two-sample t-test"){
         
-        #X-axis and Color option must be the same
+        #X-variable and Color option must be the same
         if(input$xvar == input$color) {
           dropped = drop.levels(as.factor(XVariable))
           
-          #If there are two levels for the X-axis option, run the test
+          #If there are two levels for the X-variable option, run the test
           if(nlevels(dropped) == 2) {
             model <- lm(YVariable ~ XVariable)
             
@@ -706,11 +913,11 @@ server <- function(input, output,session) {
         #Users need to use the Clean Data to run Paired T-Test
         if(input$data == "Clean Data"){
           
-          #X-axis and Color option must be the same
+          #X-variable and Color option must be the same
           if(input$xvar == input$color) {
             dropped = drop.levels(as.factor(XVariable))
             
-            #If there are two levels for the X-axis option, run the test
+            #If there are two levels for the X-variable option, run the test
             if(nlevels(dropped) == 2) {
               model <- lm(YVariable ~ XVariable)
               
@@ -768,7 +975,7 @@ server <- function(input, output,session) {
     ##Block Design
       } else if (input$tests == "Block Design") {
         
-        #Error Message if PlayerID is selected as X-axis or Color
+        #Error Message if PlayerID is selected as X-variable or Color
         if(input$xvar == "PlayerID" | input$color == "PlayerID"){
           
           output$residualtext <- renderUI(HTML(paste(
@@ -829,11 +1036,11 @@ server <- function(input, output,session) {
       ##Two sample t-test
       if(input$tests == "two-sample t-test"){
         
-        #X-axis and Color option must be the same
+        #X-variable and Color option must be the same
         if(input$xvar == input$color) {
           dropped = drop.levels(as.factor(XVariable))
           
-          #If there are two levels for the X-axis option, run the test
+          #If there are two levels for the X-variable option, run the test
           if(nlevels(dropped) == 2) {
             model <- lm(YVariable ~ XVariable)
             
@@ -852,11 +1059,11 @@ server <- function(input, output,session) {
         #Users need to use the Clean Data to run Paired T-Test
         if(input$data == "Clean Data"){
           
-          #X-axis and Color option must be the same
+          #X-variable and Color option must be the same
           if(input$xvar == input$color) {
             dropped = drop.levels(as.factor(XVariable))
             
-            #If there are two levels for the X-axis option, run the test
+            #If there are two levels for the X-variable option, run the test
             if(nlevels(dropped) == 2) {
               model <- lm(YVariable ~ XVariable)
               
@@ -892,7 +1099,7 @@ server <- function(input, output,session) {
         ##Block Design
       } else if (input$tests == "Block Design") {
         
-        #Error Message if PlayerID is selected as X-axis or Color
+        #Error Message if PlayerID is selected as X-variable or Color
         if(input$xvar == "PlayerID" | input$color == "PlayerID"){
           
         } else {
