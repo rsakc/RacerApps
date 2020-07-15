@@ -896,12 +896,12 @@ server <- function(input, output,session) {
             
           } else {
             output$residualtext <- renderUI(HTML(paste(
-              em("A valid statistical test must be in place for the residual plots to be generated."))))
+              em("A valid parametric statistical test must be in place for the residual plots to be generated."))))
           }
           
         } else{
           output$residualtext <- renderUI(HTML(paste(
-            em("A valid statistical test must be in place for the residual plots to be generated."))))
+            em("A valid parametric statistical test must be in place for the residual plots to be generated."))))
         }
           
         
@@ -933,17 +933,17 @@ server <- function(input, output,session) {
               
             } else{
               output$residualtext <- renderUI(HTML(paste(
-                em("A valid statistical test must be in place for the residual plots to be generated."))))
+                em("A valid parametric statistical test must be in place for the residual plots to be generated."))))
             }
              
           } else{
             output$residualtext <- renderUI(HTML(paste(
-              em("A valid statistical test must be in place for the residual plots to be generated."))))
+              em("A valid parametric statistical test must be in place for the residual plots to be generated."))))
           }
           
         } else{
           output$residualtext <- renderUI(HTML(paste(
-            em("A valid statistical test must be in place for the residual plots to be generated."))))
+            em("A valid parametric statistical test must be in place for the residual plots to be generated."))))
         }
              
             
@@ -979,7 +979,7 @@ server <- function(input, output,session) {
         if(input$xvar == "PlayerID" | input$color == "PlayerID"){
           
           output$residualtext <- renderUI(HTML(paste(
-            em("A valid statistical test must be in place for the residual plots to be generated."))))
+            em("A valid parametric statistical test must be in place for the residual plots to be generated."))))
         
         
         } else {
@@ -1004,12 +1004,17 @@ server <- function(input, output,session) {
           return(plot)
       
         }
+      
+      } else if(input$tests %in% c("Two Sample Randomization Test", "Paired Randomization Test")){
+        output$residualtext <- renderUI(HTML(paste(
+          em("A valid parametric statistical test must be in place for the residual plots to be generated."))))
+
       }
       
       #Test option is none
       } else{
         output$residualtext <- renderUI(HTML(paste(
-          em("A valid statistical test must be in place for the residual plots to be generated."))))
+          em("A valid parametric statistical test must be in place for the residual plots to be generated."))))
     }
         
     })
@@ -1121,11 +1126,8 @@ server <- function(input, output,session) {
         }
       }
       
-      #Test option is none
-      } else{
-        output$residualtext <- renderUI(HTML(paste(
-          em("A valid statistical test must be in place for the residual plots to be generated."))))
-      }
+      
+      } 
       
     })
     
