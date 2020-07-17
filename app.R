@@ -702,7 +702,7 @@ server <- function(input, output,session) {
          
              pvalue <- (1 + sum(results >= abs(meandiff)) + sum(results <= -abs(meandiff))) / (R+1)
             
-             return(paste("P Value:", round(pvalue,4)))
+             return(paste("P Value:", round(pvalue,5)))
             
           } else {
             "Two sample randomization tests are only valid when there are exactly two groups."
