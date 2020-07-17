@@ -254,7 +254,7 @@ ui <- fluidPage(
     
     column(2, 
            selectInput(inputId = "color",
-                       label = "Color by",
+                       label = "Color by:",
                        choices = c("Body", "Engine", "Tire", "Track", "Order2", "PlayerID"),
                        selected = "Body",
                        multiple = FALSE),
@@ -270,7 +270,7 @@ ui <- fluidPage(
            checkboxInput("summary", "Show Summary Statistics", FALSE),
            
            radioButtons(inputId = "data",
-                        label = "Choose Data", 
+                        label = "Choose Data:", 
                         choices = c("All Data", "Clean Data"),
                         selected = "All Data",
                         inline = TRUE),
