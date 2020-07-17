@@ -1,4 +1,4 @@
-#Last Updated on July 16 2020
+#Last Updated on July 17 2020
 
 #Loading Libraries
 library(shiny)
@@ -344,12 +344,12 @@ server <- function(input, output,session) {
  
     } else if(input$data == "Clean Data"){
      data <-  filter(data.clean, GroupID %in% input$groupID, Level %in% input$levels, Track %in% input$tracks, !(PlayerID %in% input$playerID))
-      
-      if(input$gooddata == "TRUE"){
+
+     #Supressing error messages
+      try(if(input$gooddata == "TRUE"){
       data <- filter(data.good, GroupID %in% input$groupID, Level %in% input$levels, Track %in% input$tracks, !(PlayerID %in% input$playerID))
-    
-      } 
-   
+       }  , silent = TRUE)
+      
     } 
     return(data)
     
@@ -380,18 +380,17 @@ server <- function(input, output,session) {
                         "playerID",
                         choices = c(sort(unique(gamedata$PlayerID))))
       
-    }
-    
-    
-    #Doesn't work right now
-    else if(input$gooddata == "TRUE"){
-      gamedata <- filter(data.good, GroupID %in% input$groupID, Level %in% input$levels, Track %in% input$tracks)
       
-      updateSelectInput(session, 
-                        "playerID",
-                        choices = c(sort(unique(gamedata$PlayerID))))
+        #Supressing error message
+        try(if(input$gooddata == "TRUE"){
+          gamedata <- filter(data.good, GroupID %in% input$groupID, Level %in% input$levels, Track %in% input$tracks)
+        
+          updateSelectInput(session,
+                            "playerID",
+                            choices = c(sort(unique(gamedata$PlayerID))))
+          }, silent = TRUE)
     }
-    
+  
   })
   
 
@@ -768,12 +767,11 @@ server <- function(input, output,session) {
               R <- 100000
               results <- numeric()
             
-              #Adjusting Data to be Under Null
-              diffvecadj <- diffvec - mean(diffvec)
-              
               for(i in 1:R){
-                samp <- sample(diffvecadj, size = length(diffvecadj), replace = TRUE)
-                results[i] <- mean(samp)
+                sign <- sample(c(-1,1), size = length(diffvec), replace = T)
+                resamp <- sign * diffvec
+               
+                results[i] <- mean(resamp)
                 
               }
               
@@ -799,12 +797,6 @@ server <- function(input, output,session) {
 
       
     })
-    
-    
-    
-    
-    
-    
     
     
     
@@ -872,8 +864,8 @@ server <- function(input, output,session) {
       PlayerID = plotData$PlayerID
     
   
-      ##Two sample t-test
-      if(input$tests == "two-sample t-test"){
+      ##Two sample t-test/Two Sample Randomization test
+      if(input$tests %in% c("two-sample t-test", "Two Sample Randomization Test")){
         
         #X-variable and Color option must be the same
         if(input$xvar == input$color) {
@@ -881,13 +873,33 @@ server <- function(input, output,session) {
           
           #If there are two levels for the X-variable option, run the test
           if(nlevels(dropped) == 2) {
-            model <- lm(YVariable ~ XVariable)
+            
+            #Small Data Frame
+            data <- data.frame(XVariable, YVariable)
+            
+            #Identifying the Two Groups and creating necessary vectors
+            groups <- sort(unique(data$XVariable))
+            group1 <- groups[1]
+            group2 <- groups[2]
+            
+            data1 <- data %>% filter(XVariable == group1)
+            data2 <- data %>% filter(XVariable == group2)
+            
+            group1vec <- data1$YVariable
+            group2vec <- data2$YVariable
+            
+            #Calculate Residuals
+            group1res <- group1vec - mean(group1vec)
+            group2res <- group2vec - mean(group2vec)
+            
+            #Combining residuals into one vector
+            residuals <- c(group1res, group2res)
             
             #Remove Message
             output$residualtext <- renderUI({""})
             
             #Creating plot
-            plot <- hist(model$residuals, main = "Histogram of Residuals",
+            plot <- hist(residuals, main = "Histogram of Residuals",
                          xlab = "Residuals",
                          ylab = "Count")
             
@@ -907,10 +919,10 @@ server <- function(input, output,session) {
         
       
         
-    ##Paired T-Test
-    } else if(input$tests == "paired t-test"){
+    ##Paired T-Test/Paired Randomization Test
+    } else if(input$tests %in% c("paired t-test", "Paired Randomization Test")){
       
-        #Users need to use the Clean Data to run Paired T-Test
+        #Users need to use the Clean Data to run Paired test
         if(input$data == "Clean Data"){
           
           #X-variable and Color option must be the same
@@ -919,13 +931,32 @@ server <- function(input, output,session) {
             
             #If there are two levels for the X-variable option, run the test
             if(nlevels(dropped) == 2) {
-              model <- lm(YVariable ~ XVariable)
+             
+              #Small Data Frame
+              data <- data.frame(XVariable, YVariable)
+              
+              #Identifying the Two Groups and creating necessary vectors
+              groups <- sort(unique(data$XVariable))
+              group1 <- groups[1]
+              group2 <- groups[2]
+              
+              data1 <- data %>% filter(XVariable == group1)
+              data2 <- data %>% filter(XVariable == group2)
+              
+              group1vec <- data1$YVariable
+              group2vec <- data2$YVariable
+              
+              #Differences Vector
+              diffvec <- group1vec - group2vec
+              
+              #Calculating residuals
+              residuals <- diffvec - mean(diffvec)
               
               #Remove Message
               output$residualtext <- renderUI({""})
               
               #Creating plot
-              plot <- hist(model$residuals, main = "Histogram of Residuals",
+              plot <- hist(residuals, main = "Histogram of Residuals",
                            xlab = "Residuals",
                            ylab = "Count")
               
@@ -1004,12 +1035,7 @@ server <- function(input, output,session) {
           return(plot)
       
         }
-      
-      } else if(input$tests %in% c("Two Sample Randomization Test", "Paired Randomization Test")){
-        output$residualtext <- renderUI(HTML(paste(
-          em("A valid parametric statistical test must be in place for the residual plots to be generated."))))
-
-      }
+      } 
       
       #Test option is none
       } else{
@@ -1038,8 +1064,8 @@ server <- function(input, output,session) {
       PlayerID = plotData$PlayerID
       
       
-      ##Two sample t-test
-      if(input$tests == "two-sample t-test"){
+      ##Two sample t-test/Two Sample Randomization Test
+      if(input$tests %in% c("two-sample t-test","Two Sample Randomization Test")){
         
         #X-variable and Color option must be the same
         if(input$xvar == input$color) {
@@ -1047,19 +1073,39 @@ server <- function(input, output,session) {
           
           #If there are two levels for the X-variable option, run the test
           if(nlevels(dropped) == 2) {
-            model <- lm(YVariable ~ XVariable)
+          
+            #Small Data Frame
+            data <- data.frame(XVariable, YVariable)
+            
+            #Identifying the Two Groups and creating necessary vectors
+            groups <- sort(unique(data$XVariable))
+            group1 <- groups[1]
+            group2 <- groups[2]
+            
+            data1 <- data %>% filter(XVariable == group1)
+            data2 <- data %>% filter(XVariable == group2)
+            
+            group1vec <- data1$YVariable
+            group2vec <- data2$YVariable
+            
+            #Calculate Residuals
+            group1res <- group1vec - mean(group1vec)
+            group2res <- group2vec - mean(group2vec)
+            
+            #Combining residuals into one vector
+            residuals <- c(group1res, group2res)
             
             #Creating plot
-            plot <- qqnorm(model$residuals) 
-            plot <- qqline(model$residuals)
+            plot <- qqnorm(residuals) 
+            plot <- qqline(residuals)
             
             return(plot)
             
           }
         }
         
-        ##Paired T-Test
-      } else if(input$tests == "paired t-test"){
+        ##Paired T-Test/Paired Randomization Test
+      } else if(input$tests %in% c("paired t-test", "Paired Randomization Test")){
         
         #Users need to use the Clean Data to run Paired T-Test
         if(input$data == "Clean Data"){
@@ -1070,11 +1116,30 @@ server <- function(input, output,session) {
             
             #If there are two levels for the X-variable option, run the test
             if(nlevels(dropped) == 2) {
-              model <- lm(YVariable ~ XVariable)
+              
+              #Small Data Frame
+              data <- data.frame(XVariable, YVariable)
+              
+              #Identifying the Two Groups and creating necessary vectors
+              groups <- sort(unique(data$XVariable))
+              group1 <- groups[1]
+              group2 <- groups[2]
+              
+              data1 <- data %>% filter(XVariable == group1)
+              data2 <- data %>% filter(XVariable == group2)
+              
+              group1vec <- data1$YVariable
+              group2vec <- data2$YVariable
+              
+              #Differences Vector
+              diffvec <- group1vec - group2vec
+              
+              #Calculating residuals
+              residuals <- diffvec - mean(diffvec)
               
               #Creating plot
-              plot <- qqnorm(model$residuals) 
-              plot <- qqline(model$residuals)
+              plot <- qqnorm(residuals) 
+              plot <- qqline(residuals)
               
               return(plot)
             } 
