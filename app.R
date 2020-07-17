@@ -260,7 +260,7 @@ ui <- fluidPage(
                        multiple = FALSE),
            
            selectInput(inputId = "tests",
-                       label = HTML("Statistical Test <br/> (for X Variable)"),
+                       label = HTML("Statistical Tests <br/> (for X Variable)"),
                        choices = c("None", "two-sample t-test", "paired t-test", "ANOVA", "Block Design", 
                                    "Two Sample Randomization Test", "Paired Randomization Test"),
                        selected = "None",
