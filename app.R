@@ -755,7 +755,7 @@ server <- function(input, output,session) {
               
               group1vec <- data1$YVariable
               group2vec <- data2$YVariable
-              
+               
               
               #Running the Paired Randomization Test
               
