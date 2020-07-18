@@ -11,7 +11,7 @@ library(stringr)
 library(readr)
 library(curl)
 library(tidyr)
-     
+      
 #Importing Data
 n <- sample(c(0,1), size = 1)
 
