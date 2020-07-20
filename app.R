@@ -1,4 +1,4 @@
-#Last Updated on July 17 2020
+#Last Updated on July 20 2020
 
 #Loading Libraries
 library(shiny)
@@ -193,6 +193,11 @@ data.all$Order2 <- as.factor(data.all$Order2)
 data.clean$Order2 <- as.factor(data.clean$Order2)
 data.good$Order2 <- as.factor(data.good$Order2)
 
+#Changing Order to OldOrder and Order2 to Order
+data.all <- data.all %>% rename(OldOrder = Order, Order = Order2)
+data.clean <- data.clean %>% rename(OldOrder = Order, Order = Order2)
+data.good <- data.good %>% rename(OldOrder = Order, Order = Order2)
+
 
 #To use for Inputs
 all_groups <- sort(unique(data.all$GroupID))
@@ -238,7 +243,7 @@ ui <- fluidPage(
            selectInput(inputId = "xvar",
                        label = "X Variable:",
                        #columns of the dataset
-                       choices = c("Body", "Engine", "Tire", "Track", "Order2", "PlayerID"),
+                       choices = c("Body", "Engine", "Tire", "Track", "Order", "PlayerID"),
                        selected = "Body",
                        multiple = FALSE),
            
@@ -255,7 +260,7 @@ ui <- fluidPage(
     column(2, 
            selectInput(inputId = "color",
                        label = "Color by:",
-                       choices = c("Body", "Engine", "Tire", "Track", "Order2", "PlayerID"),
+                       choices = c("Body", "Engine", "Tire", "Track", "Order", "PlayerID"),
                        selected = "Body",
                        multiple = FALSE),
            
