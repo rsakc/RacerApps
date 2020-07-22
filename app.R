@@ -540,33 +540,38 @@ server <- function(input, output,session) {
       #Using Reactive Data
       plotData <- plotDataR()
       
+      #We need data to run the block design ANOVA
+      if(nrow(plotData) > 0){
+      
       #Setting Up
       YVariable = plotData %>% pull(input$yvar)
       XVariable = plotData %>% pull(input$xvar)
+      XVariable = drop.levels(as.factor(XVariable))
       ColorVariable = plotData %>% pull(input$color)
       ColorVariable = drop.levels(ColorVariable)
       PlayerID = plotData$PlayerID
       
-      if (input$tests == "Block Design") {
+      #Block design option is selected
+      if(input$tests == "Block Design") {
         
         #Error Message if PlayerID is selected as X Variable or Color
         if(input$xvar == "PlayerID" | input$color == "PlayerID"){
-          
           "When using the Block Design, the X-Variabe/Color Variable cannot be PlayerID"
           
+        #We can run the block design test 
         } else {
           
-          #Two Way Blocked ANOVA
-          if(nlevels(ColorVariable) > 1){
-            anovatest = aov(YVariable ~ PlayerID + XVariable + ColorVariable + XVariable*ColorVariable)
-            
-          }
+          #At least 2 levels for X Variable
+          if(nlevels(XVariable) > 1){
           
-          #One Way Blocked
-          else{
-            anovatest = aov(YVariable ~ PlayerID + XVariable)
+            #Two Way Blocked ANOVA
+            if(nlevels(ColorVariable) > 1){
+              anovatest = aov(YVariable ~ PlayerID + XVariable + ColorVariable + XVariable*ColorVariable)
             
-          }
+            #One Way Blocked
+            } else{
+              anovatest = aov(YVariable ~ PlayerID + XVariable)
+            }
           
           #Making Tidy table and adding columns/rows
           check2 = tidy(anovatest)
@@ -581,9 +586,15 @@ server <- function(input, output,session) {
           check2 = add_row(check2,term = "Total", df = sum_df, sumsq = sum_ss)
           
           return(check2)
+          
+          #If there is one or less levels for X Variable
+          } else{
+            "At least two levels are needed for the X Variable to run the Block design test."
+          }
         }
       }
-    })
+     }
+   })
     
   
     
