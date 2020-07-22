@@ -487,6 +487,9 @@ server <- function(input, output,session) {
       #Using Reactive Data
       plotData <- plotDataR()
       
+      #We need data to run ANOVA test
+      if(nrow(plotData) > 0){
+      
       #Setting Up
       YVariable = plotData %>% pull(input$yvar)
       XVariable = plotData %>% pull(input$xvar)
@@ -495,6 +498,9 @@ server <- function(input, output,session) {
       XVariable = drop.levels(as.factor(XVariable))
       
       if(input$tests == "ANOVA") {
+        
+        #At least 2 levels for X Variable
+        if(nlevels(XVariable) > 1){
         
         #Two way ANOVA
         if(nlevels(ColorVariable) > 1){
@@ -517,8 +523,14 @@ server <- function(input, output,session) {
         check2$meansq = round(check2$meansq, digits = 2)
         check2$statistic = round(check2$statistic, digits = 2)
         
-        
         return(check2)
+        
+        #If there is one or less levels for X Variable
+        } else{
+          "At least two levels are needed for the X Variable to run the ANOVA test."
+        }
+        
+       }
       }
     })
     
