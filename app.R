@@ -1,4 +1,4 @@
-#Last Updated on July 20 2020
+#Last Updated on July 23 2020
 
 #Loading Libraries
 library(shiny)
@@ -273,6 +273,7 @@ ui <- fluidPage(
            
            checkboxInput('bplot',"Add boxplot",FALSE),
            checkboxInput("summary", "Show Summary Statistics", FALSE),
+           checkboxInput("months", "Use Last 6 Months of Data", FALSE),
            
            radioButtons(inputId = "data",
                         label = "Choose Data:", 
@@ -356,6 +357,14 @@ server <- function(input, output,session) {
        }  , silent = TRUE)
       
     } 
+    
+    #Last 6 months of data checkbox is selected
+    if(input$months == TRUE){
+      
+      sixmonthsago <- Sys.Date() - months(6)
+      data <- filter(data, Date >= sixmonthsago)
+    }
+    
     return(data)
     
   })
@@ -368,9 +377,20 @@ server <- function(input, output,session) {
     # or reactivity occurs (keeps the app from crashing)
     req(input$groupID) 
     
+    #6 Months ago variable for later use
+    sixmonthsago <- Sys.Date() - months(6)
+    
+    
     if(input$data == "All Data"){
       
+      if(input$months == FALSE){
       gamedata <- filter(data.all, GroupID %in% input$groupID, Level %in% input$levels, Track %in% input$tracks)
+      
+      } else{
+        gamedata <- filter(data.all, GroupID %in% input$groupID, Level %in% input$levels, 
+                           Track %in% input$tracks, Date >= sixmonthsago)
+      }
+      
       
       updateSelectInput(session, 
                         "playerID",
@@ -379,7 +399,13 @@ server <- function(input, output,session) {
       
     } else if(input$data == "Clean Data"){
       
+      if(input$months == FALSE){
       gamedata <- filter(data.clean, GroupID %in% input$groupID, Level %in% input$levels, Track %in% input$tracks)
+      
+      } else{
+        gamedata <- filter(data.clean, GroupID %in% input$groupID, Level %in% input$levels, 
+                           Track %in% input$tracks, Date >= sixmonthsago)
+      }
       
       updateSelectInput(session, 
                         "playerID",
@@ -388,8 +414,16 @@ server <- function(input, output,session) {
       
         #Supressing error message
         try(if(input$gooddata == "TRUE"){
+          
+          
+          if(input$months == FALSE){
           gamedata <- filter(data.good, GroupID %in% input$groupID, Level %in% input$levels, Track %in% input$tracks)
         
+          } else{
+            gamedata <- filter(data.good, GroupID %in% input$groupID, Level %in% input$levels, 
+                               Track %in% input$tracks, Date >= sixmonthsago)
+          }
+          
           updateSelectInput(session,
                             "playerID",
                             choices = c(sort(unique(gamedata$PlayerID))))
@@ -604,6 +638,8 @@ server <- function(input, output,session) {
       #Using Reactive Data
       plotData <- plotDataR()
       
+      if(nrow(plotData) > 0){
+      
       #Setting up
       YVariable = plotData %>% pull(input$yvar)
       XVariable = plotData %>% pull(input$xvar)
@@ -628,7 +664,8 @@ server <- function(input, output,session) {
           "The X variable and the Color variable should be the same for a t-test."
         }
       }
-    })
+     }
+   })
     
     
     #Paired T-Test
@@ -636,6 +673,8 @@ server <- function(input, output,session) {
       
       #Using Reactive Data
       plotData <- plotDataR()
+      
+      if(nrow(plotData) > 0){
       
       #Setting Up
       YVariable = plotData %>% pull(input$yvar)
@@ -671,6 +710,7 @@ server <- function(input, output,session) {
         }
         
       }
+     }
       
     })
     
@@ -680,6 +720,8 @@ server <- function(input, output,session) {
       
       #Reactive Data
       plotData <- plotDataR()
+      
+      if(nrow(plotData) > 0){
       
       #Setting up
       YVariable = plotData %>% pull(input$yvar)
@@ -740,6 +782,7 @@ server <- function(input, output,session) {
           "The X variable and the Color variable should be the same for a t-test."
         }
       }
+     }
     
     })
     
@@ -750,6 +793,8 @@ server <- function(input, output,session) {
       
       #Using Reactive Data
       plotData <- plotDataR()
+      
+      if(nrow(plotData) > 0){
       
       #Setting Up
       YVariable = plotData %>% pull(input$yvar)
@@ -822,8 +867,7 @@ server <- function(input, output,session) {
         }
         
       }
-
-      
+     }
     })
     
     
@@ -879,6 +923,9 @@ server <- function(input, output,session) {
       
       #Using reactive data
       plotData <- plotDataR()
+      
+      #Need data
+      if(nrow(plotData) > 0){
       
       #Test is Not None
       if(input$tests != "None"){
@@ -1010,6 +1057,9 @@ server <- function(input, output,session) {
     ##ANOVA
       } else if(input$tests == "ANOVA") {
         
+        #At least 2 levels for X Variable
+        if(nlevels(XVariable) > 1){
+        
         #Two way ANOVA
         if(nlevels(ColorVariable) > 1){
           model <- aov(YVariable ~ XVariable + ColorVariable + XVariable*ColorVariable)
@@ -1030,6 +1080,12 @@ server <- function(input, output,session) {
         
         return(plot)
         
+        #Less than 2 levels for X Variable 
+        } else{
+          output$residualtext <- renderUI(HTML(paste(
+            em("A valid statistical test must be in place for the residual plots to be generated."))))
+        }
+        
         
     ##Block Design
       } else if (input$tests == "Block Design") {
@@ -1042,6 +1098,9 @@ server <- function(input, output,session) {
         
         
         } else {
+          
+          #At least 2 levels for X Variable
+          if(nlevels(XVariable) > 1){
           
           #Two Way Blocked ANOVA
           if(nlevels(ColorVariable) > 1){
@@ -1061,15 +1120,22 @@ server <- function(input, output,session) {
                        ylab = "Count")
           
           return(plot)
+          
+          } else{
+            output$residualtext <- renderUI(HTML(paste(
+              em("A valid statistical test must be in place for the residual plots to be generated."))))
+          }
       
         }
+          
       } 
       
       #Test option is none
       } else{
         output$residualtext <- renderUI(HTML(paste(
           em("A valid statistical test must be in place for the residual plots to be generated."))))
-    }
+      }
+     }
         
     })
     
@@ -1079,6 +1145,9 @@ server <- function(input, output,session) {
       
       #Using reactive data
       plotData <- plotDataR()
+      
+      #Need data
+      if(nrow(plotData) > 0){
       
       #Test is Not None
       if(input$tests != "None"){
@@ -1177,6 +1246,9 @@ server <- function(input, output,session) {
         ##ANOVA
       } else if(input$tests == "ANOVA") {
         
+        #At least 2 levels for X Variable
+        if(nlevels(XVariable) > 1){
+        
         #Two way ANOVA
         if(nlevels(ColorVariable) > 1){
           model <- aov(YVariable ~ XVariable + ColorVariable + XVariable*ColorVariable)
@@ -1193,6 +1265,7 @@ server <- function(input, output,session) {
         
         return(plot)
         
+        }
         
         ##Block Design
       } else if (input$tests == "Block Design") {
@@ -1201,6 +1274,9 @@ server <- function(input, output,session) {
         if(input$xvar == "PlayerID" | input$color == "PlayerID"){
           
         } else {
+          
+          #At least 2 levels for X Variable
+          if(nlevels(XVariable) > 1){
           
           #Two Way Blocked ANOVA
           if(nlevels(ColorVariable) > 1){
@@ -1216,11 +1292,13 @@ server <- function(input, output,session) {
           plot <- qqline(model$residuals)
           
           return(plot)
+          }
         }
       }
       
       
       } 
+     }
       
     })
     
