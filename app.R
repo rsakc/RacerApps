@@ -212,6 +212,8 @@ ui <- fluidPage(
   titlePanel("Racer Hypothesis Tests"),
   
   fluidRow(
+    
+    #First column
     column(2,
            
            selectInput(inputId = "groupID",
@@ -257,6 +259,7 @@ ui <- fluidPage(
            
     ),
     
+    #Second column
     column(2, 
            selectInput(inputId = "color",
                        label = "Color by:",
@@ -284,11 +287,6 @@ ui <- fluidPage(
            
            downloadButton('downloadData', label = "Racer Data"),
            
-           
-           # a(h5("Tutorial Video"),
-           #   href="https://www.youtube.com/watch?v=JZDQVHVNC10",
-           #   aligh= "left", target="_blank"),
-           
            a(h5("Instructor Details"),
              href="https://stat2labs.sites.grinnell.edu/racer.html", 
              align="left", target = "_blank")
@@ -309,14 +307,13 @@ ui <- fluidPage(
                       verbatimTextOutput("pr"),
                       uiOutput("summarytext")),
              
+             #Residual plot tab
              tabPanel("Residuals", uiOutput("residualtext"),
                       fluidRow(
                splitLayout(cellWidths = c("50%", "50%"), plotOutput("rplot1"), plotOutput("rplot2"))))
              
            
     ))
-  
-  
 ))
 
 
@@ -370,17 +367,16 @@ server <- function(input, output,session) {
   })
   
   
-  # Making Remove PlayerID Input dynamic
+  #Dynamic Remove PlayerID Input 
   observe({
     
-    # req() requires a selection from GroupID before any output
-    # or reactivity occurs (keeps the app from crashing)
+    #Require
     req(input$groupID) 
     
     #6 Months ago variable for later use
     sixmonthsago <- Sys.Date() - months(6)
     
-    
+    #All Data
     if(input$data == "All Data"){
       
       if(input$months == FALSE){
@@ -396,7 +392,7 @@ server <- function(input, output,session) {
                         "playerID",
                         choices = c(sort(unique(gamedata$PlayerID))))
       
-      
+    #Clean Data
     } else if(input$data == "Clean Data"){
       
       if(input$months == FALSE){
@@ -412,7 +408,7 @@ server <- function(input, output,session) {
                         choices = c(sort(unique(gamedata$PlayerID))))
       
       
-        #Supressing error message
+        #Supressing error message/Good Data
         try(if(input$gooddata == "TRUE"){
           
           
@@ -638,6 +634,7 @@ server <- function(input, output,session) {
       #Using Reactive Data
       plotData <- plotDataR()
       
+      #We need data
       if(nrow(plotData) > 0){
       
       #Setting up
@@ -674,6 +671,7 @@ server <- function(input, output,session) {
       #Using Reactive Data
       plotData <- plotDataR()
       
+      #We need data
       if(nrow(plotData) > 0){
       
       #Setting Up
@@ -721,6 +719,7 @@ server <- function(input, output,session) {
       #Reactive Data
       plotData <- plotDataR()
       
+      #We need data
       if(nrow(plotData) > 0){
       
       #Setting up
@@ -794,6 +793,7 @@ server <- function(input, output,session) {
       #Using Reactive Data
       plotData <- plotDataR()
       
+      #We need data
       if(nrow(plotData) > 0){
       
       #Setting Up
@@ -1302,6 +1302,7 @@ server <- function(input, output,session) {
       
     })
     
+    #Returning visual
     return(myplot)
  
      })
@@ -1322,5 +1323,3 @@ server <- function(input, output,session) {
 
 #Creating Shiny App
 shinyApp(ui = ui, server = server)
-
-
