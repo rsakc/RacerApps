@@ -580,7 +580,7 @@ server <- function(input, output,session) {
       XVariable = drop.levels(as.factor(XVariable))
       ColorVariable = plotData %>% pull(input$color)
       ColorVariable = drop.levels(ColorVariable)
-      PlayerID = plotData$PlayerID
+      PlayerID = as.factor(plotData$PlayerID)
        
       #Block design option is selected
       if(input$tests == "Block Design") {
@@ -937,7 +937,7 @@ server <- function(input, output,session) {
       XVariable = drop.levels(as.factor(XVariable))
       ColorVariable = plotData %>% pull(input$color)
       ColorVariable = drop.levels(as.factor(ColorVariable))
-      PlayerID = plotData$PlayerID
+      PlayerID = as.factor(plotData$PlayerID)
     
   
       ##Two sample t-test/Two Sample Randomization test
@@ -1159,7 +1159,7 @@ server <- function(input, output,session) {
       XVariable = drop.levels(as.factor(XVariable))
       ColorVariable = plotData %>% pull(input$color)
       ColorVariable = drop.levels(as.factor(ColorVariable))
-      PlayerID = plotData$PlayerID
+      PlayerID = as.factor(plotData$PlayerID)
       
       
       ##Two sample t-test/Two Sample Randomization Test
