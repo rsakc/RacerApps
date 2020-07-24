@@ -597,11 +597,11 @@ server <- function(input, output,session) {
           
             #Two Way Blocked ANOVA
             if(nlevels(ColorVariable) > 1){
-              anovatest = anova(aov(YVariable ~ PlayerID + XVariable + ColorVariable + XVariable*ColorVariable))
+              anovatest = anova(aov(YVariable ~ XVariable + PlayerID + ColorVariable + XVariable*ColorVariable))
             
             #One Way Blocked
             } else{
-              anovatest = anova(aov(YVariable ~ PlayerID + XVariable))
+              anovatest = anova(aov(YVariable ~ XVariable + PlayerID))
             }
           
           #Making Tidy table and adding columns/rows
