@@ -601,7 +601,7 @@ server <- function(input, output,session) {
             
             #One Way Blocked
             } else{
-              anovatest = aov(YVariable ~ PlayerID + XVariable)
+              anovatest = anova(aov(YVariable ~ PlayerID + XVariable))
             }
           
           #Making Tidy table and adding columns/rows
