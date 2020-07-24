@@ -1105,11 +1105,11 @@ server <- function(input, output,session) {
           
           #Two Way Blocked ANOVA
           if(nlevels(ColorVariable) > 1){
-            model <-  aov(YVariable ~ PlayerID + XVariable + ColorVariable + XVariable*ColorVariable)
+            model <-  aov(YVariable ~ XVariable + PlayerID + ColorVariable + XVariable*ColorVariable)
           
           #One Way Blocked
           } else{
-            model <-  aov(YVariable ~ PlayerID + XVariable)
+            model <-  aov(YVariable ~ XVariable + PlayerID)
           }
           
           #Remove Message
@@ -1281,11 +1281,11 @@ server <- function(input, output,session) {
           
           #Two Way Blocked ANOVA
           if(nlevels(ColorVariable) > 1){
-            model <-  aov(YVariable ~ PlayerID + XVariable + ColorVariable + XVariable*ColorVariable)
+            model <-  aov(YVariable ~  XVariable + PlayerID + ColorVariable + XVariable*ColorVariable)
             
             #One Way Blocked
           } else{
-            model <-  aov(YVariable ~ PlayerID + XVariable)
+            model <-  aov(YVariable ~ XVariable + PlayerID)
           }
           
           #Creating plot
