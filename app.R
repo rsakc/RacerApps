@@ -1318,7 +1318,7 @@ server <- function(input, output,session) {
       write.csv(plotDataR(), con)
     })
   
-  
+   
 } #Closes Server
 
 #Creating Shiny App
