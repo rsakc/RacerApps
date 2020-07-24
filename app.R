@@ -581,7 +581,7 @@ server <- function(input, output,session) {
       ColorVariable = plotData %>% pull(input$color)
       ColorVariable = drop.levels(ColorVariable)
       PlayerID = plotData$PlayerID
-      
+       
       #Block design option is selected
       if(input$tests == "Block Design") {
         
